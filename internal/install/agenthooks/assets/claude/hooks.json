@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{TRACEKNOT_BIN}} claim",
+            "timeout": 240
+          }
+        ]
+      }
+    ]
+  }
+}

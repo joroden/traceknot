@@ -1,0 +1,13 @@
+# >>> traceknot >>>
+[otel]
+environment = "dev"
+log_user_prompt = true
+
+[otel.exporter.otlp-http]
+endpoint = "http://127.0.0.1:4318/v1/logs"
+protocol = "binary"
+
+[otel.trace_exporter.otlp-http]
+endpoint = "http://127.0.0.1:4318/v1/traces"
+protocol = "binary"
+# <<< traceknot <<<

@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "type": "command",
+        "command": "{{TRACEKNOT_BIN}} claim",
+        "timeoutSec": 240
+      }
+    ]
+  }
+}

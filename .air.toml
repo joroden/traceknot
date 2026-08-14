@@ -1,0 +1,11 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+cmd = "cd ui && pnpm build && cd .. && go build -o ./tmp/main ./cmd/traceknot"
+bin = "tmp/main"
+include_ext = ["go", "sql", "ts", "tsx", "css", "html"]
+exclude_dir = ["tmp", "dist", "bin", "install", "ui/node_modules", "ui/dist", ".git"]
+
+[log]
+time = true

@@ -1,0 +1,92 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version: "1.25"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v5
+        with:
+          package_json_file: ui/package.json
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24.x
+          cache: pnpm
+          cache-dependency-path: ui/pnpm-lock.yaml
+          registry-url: https://registry.npmjs.org
+
+      - name: Install UI dependencies
+        working-directory: ui
+        run: pnpm install --frozen-lockfile
+
+      - name: make dist
+        run: make dist
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: release-publish
+    permissions:
+      id-token: write
+      attestations: write
+      contents: read
+    env:
+      RCLONE_CONFIG_R2_TYPE: s3
+      RCLONE_CONFIG_R2_PROVIDER: Cloudflare
+      RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      RCLONE_CONFIG_R2_REGION: auto
+      RCLONE_CONFIG_R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+      RCLONE_CONFIG_R2_NO_CHECK_BUCKET: "true"
+      R2_BUCKET: ${{ secrets.R2_BUCKET_NAME }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist
+
+      - name: Install rclone
+        run: curl https://rclone.org/install.sh | sudo bash
+
+      - name: Generate GitHub build provenance attestation
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: "dist/downloads/traceknot-*"
+
+      - name: Upload versioned binaries to R2
+        run: |
+          set -euo pipefail
+          rclone copy dist/downloads/ "r2:$R2_BUCKET/releases/${{ github.ref_name }}/downloads/" \
+            --no-traverse
+
+      - name: Upload install scripts to R2 (stable root path)
+        run: |
+          set -euo pipefail
+          rclone copy dist/ "r2:$R2_BUCKET/" \
+            --no-traverse \
+            --include "install.sh" --include "install.ps1"
+
+      - name: Point latest.txt at this release
+        run: |
+          set -euo pipefail
+          echo -n "${{ github.ref_name }}" | rclone rcat "r2:$R2_BUCKET/latest.txt"
