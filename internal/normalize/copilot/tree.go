@@ -10,13 +10,21 @@ import (
 
 func (builder *Builder) walk(sessionID string, containerSpanID string, parentNodeID *string, isRoot bool, byParent map[string][]*Span, content *model.SessionContent) {
 	var currentChatNodeID *string
+	var turnRootChatNodeID *string
 	for _, span := range byParent[containerSpanID] {
 		op, _ := attributeString(span.Attributes, "gen_ai.operation.name")
 		switch op {
 		case opChat:
-			chat := builder.chatSeed(sessionID, span, parentNodeID, isRoot)
+			chatParentNodeID, chatIsRoot := parentNodeID, isRoot
+			if turnRootChatNodeID != nil {
+				chatParentNodeID, chatIsRoot = turnRootChatNodeID, false
+			}
+			chat := builder.chatSeed(sessionID, span, chatParentNodeID, chatIsRoot)
 			content.Chats = append(content.Chats, chat)
 			currentChatNodeID = ptr.String(chat.NodeID)
+			if turnRootChatNodeID == nil {
+				turnRootChatNodeID = currentChatNodeID
+			}
 
 		case opExecuteTool:
 			toolParentNodeID := parentNodeID

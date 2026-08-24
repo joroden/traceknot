@@ -23,6 +23,7 @@ import (
 	"traceknot/internal/normalize/shared"
 	"traceknot/internal/pricing"
 	"traceknot/internal/providers"
+	"traceknot/internal/rebuildstatus"
 	"traceknot/internal/store"
 	"traceknot/internal/tokenize"
 	"traceknot/ui"
@@ -50,8 +51,6 @@ func Run(dbPath string, listenAddr string, logger *slog.Logger) error {
 	}
 	defer storeHandle.Close()
 
-	reconcileClaimAttachments(storeHandle, logger)
-
 	catalog, err := pricing.LoadEmbeddedCatalog()
 	if err != nil {
 		return fmt.Errorf("load pricing catalog: %w", err)
@@ -59,6 +58,10 @@ func Run(dbPath string, listenAddr string, logger *slog.Logger) error {
 
 	normalizers := serviceNormalizers(catalog)
 	receiver := ingest.NewReceiver(storeHandle, normalizers, logger)
+	rebuildTracker := rebuildstatus.New()
+
+	reconcileClaimAttachments(storeHandle, logger)
+	go rebuildStaleNormalizers(storeHandle, receiver, normalizers, logger, rebuildTracker)
 
 	watcherCancel := startRolloutWatcher(receiver, normalizers, logger)
 	defer watcherCancel()
@@ -68,7 +71,7 @@ func Run(dbPath string, listenAddr string, logger *slog.Logger) error {
 
 	httpServer := &http.Server{
 		Addr:              listenAddr,
-		Handler:           requireSameOrigin(buildMux(storeHandle, receiver), listenAddr),
+		Handler:           requireSameOrigin(buildMux(storeHandle, receiver, rebuildTracker), listenAddr),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 	return serveUntilShutdown(httpServer, listenAddr, dbPath, logger)
@@ -137,7 +140,7 @@ func allowedOrigins(listenAddr string) map[string]bool {
 	return origins
 }
 
-func buildMux(storeHandle *store.Store, receiver *ingest.Receiver) http.Handler {
+func buildMux(storeHandle *store.Store, receiver *ingest.Receiver, rebuildTracker *rebuildstatus.Status) http.Handler {
 	registry := providers.NewRegistry(providers.NewGitHub(), providers.NewJira())
 	picker := api.NewPicker(storeHandle, registry)
 	dashboard := api.NewDashboard(storeHandle)
@@ -158,7 +161,12 @@ func buildMux(storeHandle *store.Store, receiver *ingest.Receiver) http.Handler 
 		httputil.WriteJSON(writer, http.StatusOK, map[string]any{"ok": true, "service": "traceknot"})
 	})
 	mux.HandleFunc("GET /readyz", func(writer http.ResponseWriter, _ *http.Request) {
-		httputil.WriteJSON(writer, http.StatusOK, map[string]any{"ok": true, "ready": true})
+		rebuilding := rebuildTracker.InProgress()
+		httputil.WriteJSON(writer, http.StatusOK, map[string]any{
+			"ok":         true,
+			"ready":      len(rebuilding) == 0,
+			"rebuilding": rebuilding,
+		})
 	})
 	return mux
 }

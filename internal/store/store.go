@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	_ "embed"
 	"fmt"
+	"sync"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -16,8 +17,12 @@ var coreMigrationSQL string
 //go:embed migrations/002-picker.sql
 var pickerMigrationSQL string
 
+//go:embed migrations/003-normalizer-versions.sql
+var normalizerVersionsMigrationSQL string
+
 type Store struct {
-	db *sql.DB
+	db        *sql.DB
+	batchLock sync.Mutex
 }
 
 func Open(path string) (*Store, error) {
@@ -47,6 +52,10 @@ func Open(path string) (*Store, error) {
 	if _, err := store.db.ExecContext(context.Background(), pickerMigrationSQL); err != nil {
 		_ = db.Close()
 		return nil, fmt.Errorf("apply picker migration: %w", err)
+	}
+	if _, err := store.db.ExecContext(context.Background(), normalizerVersionsMigrationSQL); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("apply normalizer versions migration: %w", err)
 	}
 	if err := store.seedInstallTime(); err != nil {
 		_ = db.Close()
@@ -79,17 +88,21 @@ func (store *Store) DB() *sql.DB {
 }
 
 func (store *Store) BeginBatch(ctx context.Context) (*sql.Tx, error) {
+	store.batchLock.Lock()
 	if _, err := store.db.ExecContext(ctx, "PRAGMA foreign_keys = OFF"); err != nil {
+		store.batchLock.Unlock()
 		return nil, fmt.Errorf("disable foreign keys for batch: %w", err)
 	}
 	tx, err := store.db.BeginTx(ctx, nil)
 	if err != nil {
+		store.batchLock.Unlock()
 		return nil, fmt.Errorf("begin batch: %w", err)
 	}
 	return tx, nil
 }
 
 func (store *Store) CommitBatch(ctx context.Context, tx *sql.Tx) error {
+	defer store.batchLock.Unlock()
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("commit batch: %w", err)
 	}
@@ -100,6 +113,7 @@ func (store *Store) CommitBatch(ctx context.Context, tx *sql.Tx) error {
 }
 
 func (store *Store) RollbackBatch(ctx context.Context, tx *sql.Tx) error {
+	defer store.batchLock.Unlock()
 	if err := tx.Rollback(); err != nil {
 		return fmt.Errorf("rollback batch: %w", err)
 	}

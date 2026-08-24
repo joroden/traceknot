@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS normalizer_versions (
+  provider TEXT PRIMARY KEY,
+  version INTEGER NOT NULL,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

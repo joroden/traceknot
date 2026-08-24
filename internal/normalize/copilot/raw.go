@@ -18,6 +18,13 @@ func stripPII(attributes map[string]any) map[string]any {
 	return stripped
 }
 
+func spanNativeID(span Span) string {
+	if conversationID, ok := attributeString(span.Attributes, "gen_ai.conversation.id"); ok && conversationID != "" {
+		return conversationID
+	}
+	return span.TraceID
+}
+
 func spansToRecords(spans []Span) []shared.RawRecord {
 	records := make([]shared.RawRecord, 0, len(spans))
 	for _, span := range spans {
@@ -31,7 +38,7 @@ func spansToRecords(spans []Span) []shared.RawRecord {
 			continue
 		}
 		records = append(records, shared.RawRecord{
-			NativeID:    narrowed.TraceID,
+			NativeID:    spanNativeID(span),
 			Signal:      "span",
 			DedupKey:    narrowed.SpanID,
 			TimestampMs: narrowed.TimestampMs,
@@ -41,8 +48,19 @@ func spansToRecords(spans []Span) []shared.RawRecord {
 	return records
 }
 
+func RegroupNativeID(record shared.RawRecord) (string, bool) {
+	if record.Signal != "span" {
+		return "", false
+	}
+	var span Span
+	if err := json.Unmarshal([]byte(record.PayloadJSON), &span); err != nil {
+		return "", false
+	}
+	return spanNativeID(span), true
+}
+
 func recordsToSession(nativeID string, records []shared.RawRecord) *Session {
-	session := &Session{TraceID: nativeID}
+	session := &Session{NativeID: nativeID}
 	for _, record := range records {
 		if record.Signal != "span" {
 			continue
