@@ -1,4 +1,4 @@
-import { Bot, Circle, GitBranch, MessageSquare, Wrench, Zap } from "lucide-react";
+import { Bot, Circle, GitBranch, MessageCircle, MessageSquare, Wrench, Zap } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 const KIND_STYLES: Record<string, { icon: LucideIcon; label: string; className: string }> = {
@@ -16,6 +16,11 @@ const KIND_STYLES: Record<string, { icon: LucideIcon; label: string; className: 
     icon: Wrench,
     label: "Tool",
     className: "bg-red-500/15 text-red-400 light:bg-red-500/10 light:text-red-600",
+  },
+  prompt: {
+    icon: MessageCircle,
+    label: "Prompt",
+    className: "bg-sky-500/15 text-sky-400 light:bg-sky-500/10 light:text-sky-600",
   },
   chat: {
     icon: MessageSquare,

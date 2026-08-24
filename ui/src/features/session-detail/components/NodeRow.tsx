@@ -25,7 +25,7 @@ function labelFor(row: TreeNodeRow): string {
     return row.agent_name ?? row.name ?? "Agent";
   }
   if (row.kind === "chat") {
-    return "Chat";
+    return row.name === "user" ? "Prompt" : "Chat";
   }
   return row.name ?? row.kind;
 }
@@ -40,7 +40,8 @@ export function NodeRow({
   onSelect,
 }: NodeRowProps) {
   const isSubagent = row.launchNodeId !== null || (row.kind === "agent" && row.tool_name === "Agent");
-  const displayKind = isSubagent ? "subagent" : row.kind;
+  const isPrompt = row.kind === "chat" && row.name === "user";
+  const displayKind = isSubagent ? "subagent" : isPrompt ? "prompt" : row.kind;
   const style = kindStyle(displayKind);
   const Icon = style.icon;
   const indent = depth * 16;
