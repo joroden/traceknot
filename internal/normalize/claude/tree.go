@@ -38,19 +38,21 @@ func groupByTurn(events []Event) []*turnEvents {
 }
 
 type sessionState struct {
-	entryNodeByOwner map[string]string
-	agentSeedByID    map[string]*model.AgentSeed
-	matchedAgents    map[string]bool
-	spawnOrder       []string
-	cacheTierSplits  map[string]cacheTierSplit
+	entryNodeByOwner       map[string]string
+	agentSeedByID          map[string]*model.AgentSeed
+	matchedAgents          map[string]bool
+	spawnOrder             []string
+	cacheTierSplits        map[string]cacheTierSplit
+	internalUsageByToolUse map[string]*model.ChatSeed
 }
 
 func newSessionState(cacheTierSplits map[string]cacheTierSplit) *sessionState {
 	return &sessionState{
-		entryNodeByOwner: map[string]string{},
-		agentSeedByID:    map[string]*model.AgentSeed{},
-		matchedAgents:    map[string]bool{},
-		cacheTierSplits:  cacheTierSplits,
+		entryNodeByOwner:       map[string]string{},
+		agentSeedByID:          map[string]*model.AgentSeed{},
+		matchedAgents:          map[string]bool{},
+		cacheTierSplits:        cacheTierSplits,
+		internalUsageByToolUse: map[string]*model.ChatSeed{},
 	}
 }
 
@@ -155,11 +157,23 @@ func (builder *Builder) walkTurnEvents(
 			if !ok {
 				continue
 			}
+			toolUseID := ""
+			if owner == rootOwner {
+				toolUseID = links.parentToolUseIDByRequest[requestID]
+			}
 			step := builder.assistantStep(sessionID, event, requestID, parentNodeID, state.session.cacheTierSplits[requestID])
-			turnContent.Chats = append(turnContent.Chats, step)
 			state.stepByRequestID[requestID] = step
-			if isVisibleQuerySource(querySource) {
-				state.currentStepByOwner[owner] = step
+			switch {
+			case toolUseID != "":
+				state.session.internalUsageByToolUse[toolUseID] = step
+			case owner == rootOwner && !isVisibleQuerySource(querySource):
+				step.Name = chatNameMeta
+				turnContent.Chats = append(turnContent.Chats, step)
+			default:
+				turnContent.Chats = append(turnContent.Chats, step)
+				if isVisibleQuerySource(querySource) {
+					state.currentStepByOwner[owner] = step
+				}
 			}
 
 		case eventAssistantResp:
@@ -188,7 +202,8 @@ func (builder *Builder) walkTurnEvents(
 			if !ok {
 				continue
 			}
-			tool := builder.toolCall(sessionID, event, toolUseID, toolName, parentNodeID, links, approvals)
+			internalUsage := state.session.internalUsageByToolUse[toolUseID]
+			tool := builder.toolCall(sessionID, event, toolUseID, toolName, parentNodeID, links, approvals, internalUsage)
 			turnContent.ToolCalls = append(turnContent.ToolCalls, tool)
 
 		case eventSubagentComplete:
@@ -284,6 +299,7 @@ func (builder *Builder) toolCall(
 	toolUseID, toolName, parentNodeID string,
 	links *agentLinks,
 	approvals map[string]approvalInfo,
+	internalUsage *model.ChatSeed,
 ) *model.ToolCallSeed {
 	arguments, _ := attributeString(event.Attributes, "tool_input")
 	success, _ := attributeBool(event.Attributes, "success")
@@ -292,6 +308,9 @@ func (builder *Builder) toolCall(
 		status = "error"
 	}
 	output := links.toolOutputByToolUse[toolUseID]
+	if output == "" && internalUsage != nil {
+		output = internalUsage.OutputText
+	}
 
 	startedAt := event.TimestampMs
 	duration, hasDuration := attributeInt(event.Attributes, "duration_ms")
@@ -322,6 +341,14 @@ func (builder *Builder) toolCall(
 	if hasDuration && duration > 0 {
 		seed.EndedAtUnixMs = ptr.Int64(event.TimestampMs)
 		seed.DurationMs = ptr.Float64(float64(duration))
+	}
+	if internalUsage != nil {
+		seed.Model = internalUsage.Model
+		seed.InputTokens = internalUsage.InputTokens
+		seed.CachedInputTokens = internalUsage.CachedInputTokens
+		seed.CacheWriteTokens = internalUsage.CacheWriteTokens
+		seed.OutputTokens = internalUsage.OutputTokens
+		seed.Cost = internalUsage.Cost
 	}
 	if info, ok := approvals[toolUseID]; ok {
 		if info.decision != "" {

@@ -41,7 +41,15 @@ export function DetailDrawer({ nodeId, launchNodeId, treeRow, onClose }: DetailD
 
   const isSubagent =
     launchNodeId !== null || (detail?.kind === "agent" && detail.tool_name === "Agent");
-  const displayKind = isSubagent ? "subagent" : (detail?.kind ?? "");
+  const isPrompt = detail?.kind === "chat" && detail.name === "user";
+  const isMeta = detail?.kind === "chat" && detail.name === "meta";
+  const displayKind = isSubagent
+    ? "subagent"
+    : isPrompt
+      ? "prompt"
+      : isMeta
+        ? "meta"
+        : (detail?.kind ?? "");
 
   let title = "Node";
   if (detail) {
@@ -80,7 +88,7 @@ export function DetailDrawer({ nodeId, launchNodeId, treeRow, onClose }: DetailD
         {detail && (
           <div className="flex min-h-0 flex-1 flex-col gap-3">
             <div className="shrink-0 space-y-1.5">
-              {detail.kind === "tool_call" ? (
+              {detail.kind === "tool_call" && !detail.model ? (
                 <MetaRow label="Est. tokens">
                   {detail.estimated_input_tokens > 0 || detail.estimated_output_tokens > 0 ? (
                     <span title={detail.token_estimate_method ?? undefined}>
