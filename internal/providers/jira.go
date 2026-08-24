@@ -151,7 +151,7 @@ func hasRecordShape(record map[string]any) bool {
 			return false
 		}
 	}
-	return asString(record["summary"]) != "" || asString(record["title"]) != ""
+	return fieldString(record, "summary", "title") != ""
 }
 
 func (jira *Jira) normalize(record map[string]any) *WorkItem {
@@ -159,7 +159,7 @@ func (jira *Jira) normalize(record map[string]any) *WorkItem {
 	if key == "" {
 		return nil
 	}
-	summary := firstString(record, "summary", "title")
+	summary := fieldString(record, "summary", "title")
 	status := firstString(record, "status")
 	if status == "" {
 		status = nestedString(record, "fields", "status", "name")
@@ -221,4 +221,15 @@ func firstString(record map[string]any, keys ...string) string {
 		}
 	}
 	return ""
+}
+
+func fieldString(record map[string]any, keys ...string) string {
+	if text := firstString(record, keys...); text != "" {
+		return text
+	}
+	fields, ok := record["fields"].(map[string]any)
+	if !ok {
+		return ""
+	}
+	return firstString(fields, keys...)
 }
