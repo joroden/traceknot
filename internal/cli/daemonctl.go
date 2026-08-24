@@ -2,12 +2,15 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 
 	"traceknot/internal/install/autostart"
@@ -44,6 +47,7 @@ func startDaemonNow(ctx context.Context) error {
 		runQuiet(ctx, "systemctl", "--user", "start", "traceknot.service")
 		if waitHealthy(ctx, defaultServerURL) {
 			fmt.Println("daemon started (systemd user service)")
+			waitReady(ctx, defaultServerURL)
 			return nil
 		}
 	case autostart.LaunchAgentExists():
@@ -51,6 +55,7 @@ func startDaemonNow(ctx context.Context) error {
 		runQuiet(ctx, "launchctl", "bootstrap", "gui/"+fmt.Sprint(os.Getuid()), plist)
 		if waitHealthy(ctx, defaultServerURL) {
 			fmt.Println("daemon started (LaunchAgent)")
+			waitReady(ctx, defaultServerURL)
 			return nil
 		}
 	}
@@ -63,6 +68,7 @@ func startDaemonNow(ctx context.Context) error {
 	}
 	if waitHealthy(ctx, defaultServerURL) {
 		fmt.Println("daemon started (background, log at " + daemonLogPath() + ")")
+		waitReady(ctx, defaultServerURL)
 		return nil
 	}
 	return fmt.Errorf("daemon failed to start; check %s", daemonLogPath())
@@ -144,6 +150,58 @@ func waitHealthy(ctx context.Context, server string) bool {
 		time.Sleep(500 * time.Millisecond)
 	}
 	return false
+}
+
+type readyzResponse struct {
+	Ready      bool     `json:"ready"`
+	Rebuilding []string `json:"rebuilding"`
+}
+
+func daemonRebuilding(ctx context.Context, server string) ([]string, bool) {
+	client := &http.Client{Timeout: 2 * time.Second}
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.TrimRight(server, "/")+"/readyz", nil)
+	if err != nil {
+		return nil, false
+	}
+	response, err := client.Do(request)
+	if err != nil {
+		return nil, false
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		return nil, false
+	}
+	var body readyzResponse
+	if err := json.NewDecoder(response.Body).Decode(&body); err != nil {
+		return nil, false
+	}
+	return body.Rebuilding, true
+}
+
+func waitReady(ctx context.Context, server string) {
+	const maxWait = 60 * time.Second
+	deadline := time.Now().Add(maxWait)
+	announced := false
+	for time.Now().Before(deadline) {
+		rebuilding, ok := daemonRebuilding(ctx, server)
+		if !ok {
+			return
+		}
+		if len(rebuilding) == 0 {
+			if announced {
+				fmt.Println("session data update finished")
+			}
+			return
+		}
+		if !announced {
+			fmt.Println("updating session data (" + strings.Join(rebuilding, ", ") + ")... this can take a few minutes")
+			announced = true
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+	if announced {
+		fmt.Println("still updating session data in the background; check " + daemonLogPath())
+	}
 }
 
 func portFromURL(server string) string {

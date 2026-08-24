@@ -19,8 +19,8 @@ const (
 )
 
 type Session struct {
-	TraceID string
-	Spans   []Span
+	NativeID string
+	Spans    []Span
 }
 
 type Builder struct {
@@ -39,20 +39,59 @@ func (builder *Builder) buildSession(session *Session) (*model.SessionSeed, *mod
 		return nil, nil
 	}
 
-	rootSpanID := findRootSpanID(spans)
-	if rootSpanID == "" {
-		return nil, nil
+	byTrace := groupByTraceID(spans)
+	traceIDs := orderedTraceIDs(byTrace)
+
+	var firstRoot *Span
+	for _, traceID := range traceIDs {
+		if rootSpanID := findRootSpanID(byTrace[traceID]); rootSpanID != "" {
+			firstRoot = findSpanByID(byTrace[traceID], rootSpanID)
+			break
+		}
 	}
-	byParent := groupByParent(spans)
+	seed := builder.sessionSeed(session.NativeID, firstRoot, spans)
 
-	seed := builder.sessionSeed(session.TraceID, findSpanByID(spans, rootSpanID), spans)
 	content := &model.SessionContent{}
-	builder.walk(seed.SessionID, rootSpanID, nil, true, byParent, content)
+	for _, traceID := range traceIDs {
+		traceSpans := byTrace[traceID]
+		rootSpanID := findRootSpanID(traceSpans)
+		if rootSpanID == "" {
+			continue
+		}
+		byParent := groupByParent(traceSpans)
+		builder.walk(seed.SessionID, rootSpanID, nil, true, byParent, content)
+	}
 	if len(content.Chats)+len(content.ToolCalls)+len(content.Agents) == 0 {
-
 		return nil, nil
 	}
 	return seed, content
+}
+
+func groupByTraceID(spans []Span) map[string][]Span {
+	byTrace := make(map[string][]Span)
+	for _, span := range spans {
+		byTrace[span.TraceID] = append(byTrace[span.TraceID], span)
+	}
+	return byTrace
+}
+
+func orderedTraceIDs(byTrace map[string][]Span) []string {
+	traceIDs := make([]string, 0, len(byTrace))
+	firstSeen := make(map[string]int64, len(byTrace))
+	for traceID, spans := range byTrace {
+		traceIDs = append(traceIDs, traceID)
+		earliest := spans[0].TimestampMs
+		for _, span := range spans {
+			if span.TimestampMs < earliest {
+				earliest = span.TimestampMs
+			}
+		}
+		firstSeen[traceID] = earliest
+	}
+	sort.SliceStable(traceIDs, func(left, right int) bool {
+		return firstSeen[traceIDs[left]] < firstSeen[traceIDs[right]]
+	})
+	return traceIDs
 }
 
 func findRootSpanID(spans []Span) string {
@@ -112,7 +151,7 @@ func groupByParent(spans []Span) map[string][]*Span {
 	return byParent
 }
 
-func (builder *Builder) sessionSeed(traceID string, root *Span, spans []Span) *model.SessionSeed {
+func (builder *Builder) sessionSeed(nativeID string, root *Span, spans []Span) *model.SessionSeed {
 	started, ended := spans[0].TimestampMs, spans[0].TimestampMs
 	conversationID, systemPrompt := "", ""
 	for _, span := range spans {
@@ -157,12 +196,17 @@ func (builder *Builder) sessionSeed(traceID string, root *Span, spans []Span) *m
 		}
 	}
 
-	dbSessionID := shared.SessionID("copilot", traceID)
+	sessionIDSource := "trace_id"
+	if conversationID != "" {
+		sessionIDSource = "external_conversation_id"
+	}
+
+	dbSessionID := shared.SessionID("copilot", nativeID)
 	return &model.SessionSeed{
 		SessionID:              dbSessionID,
 		ExternalConversationID: ptr.String(conversationID),
-		NativeSessionID:        ptr.String(traceID),
-		SessionIDSource:        "trace_id",
+		NativeSessionID:        ptr.String(nativeID),
+		SessionIDSource:        sessionIDSource,
 		Provider:               "copilot",
 		Title:                  title,
 		ServiceName:            ptr.String("copilot-cli"),
