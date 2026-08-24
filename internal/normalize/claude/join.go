@@ -10,11 +10,12 @@ const (
 )
 
 type agentLinks struct {
-	agentIDByRequestID    map[string]string
-	spawnToolUseIDByAgent map[string]string
-	agentIDBySpawnToolUse map[string]string
-	ownerAgentIDByToolUse map[string]string
-	toolOutputByToolUse   map[string]string
+	agentIDByRequestID       map[string]string
+	spawnToolUseIDByAgent    map[string]string
+	agentIDBySpawnToolUse    map[string]string
+	ownerAgentIDByToolUse    map[string]string
+	toolOutputByToolUse      map[string]string
+	parentToolUseIDByRequest map[string]string
 }
 
 func buildAgentLinks(spans []Span) *agentLinks {
@@ -24,11 +25,12 @@ func buildAgentLinks(spans []Span) *agentLinks {
 	}
 
 	links := &agentLinks{
-		agentIDByRequestID:    make(map[string]string),
-		spawnToolUseIDByAgent: make(map[string]string),
-		agentIDBySpawnToolUse: make(map[string]string),
-		ownerAgentIDByToolUse: make(map[string]string),
-		toolOutputByToolUse:   make(map[string]string),
+		agentIDByRequestID:       make(map[string]string),
+		spawnToolUseIDByAgent:    make(map[string]string),
+		agentIDBySpawnToolUse:    make(map[string]string),
+		ownerAgentIDByToolUse:    make(map[string]string),
+		toolOutputByToolUse:      make(map[string]string),
+		parentToolUseIDByRequest: make(map[string]string),
 	}
 
 	for index := range spans {
@@ -47,6 +49,9 @@ func buildAgentLinks(spans []Span) *agentLinks {
 				if spawnToolUseID != "" {
 					links.agentIDBySpawnToolUse[spawnToolUseID] = agentID
 				}
+			}
+			if toolUseID := nearestAncestorToolCallUseID(span.ParentSpanID, byID); toolUseID != "" {
+				links.parentToolUseIDByRequest[requestID] = toolUseID
 			}
 		case spanTool:
 			toolUseID, ok := attributeString(span.Attributes, "tool_use_id")
@@ -74,6 +79,24 @@ func nearestAncestorToolUseID(parentSpanID string, byID map[string]*Span) string
 				toolUseID, _ := attributeString(span.Attributes, "tool_use_id")
 				return toolUseID
 			}
+		}
+		parentSpanID = span.ParentSpanID
+	}
+	return ""
+}
+
+func nearestAncestorToolCallUseID(parentSpanID string, byID map[string]*Span) string {
+	seen := map[string]bool{}
+	for parentSpanID != "" && byID[parentSpanID] != nil && !seen[parentSpanID] {
+		seen[parentSpanID] = true
+		span := byID[parentSpanID]
+		if span.Name == spanTool {
+			name, _ := attributeString(span.Attributes, "tool_name")
+			if name == spawnToolName {
+				return ""
+			}
+			toolUseID, _ := attributeString(span.Attributes, "tool_use_id")
+			return toolUseID
 		}
 		parentSpanID = span.ParentSpanID
 	}

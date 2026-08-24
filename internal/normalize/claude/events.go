@@ -17,4 +17,6 @@ const (
 	querySourceAgentPrefix = "agent:"
 
 	querySourceWebSearch = "web_search_tool"
+
+	chatNameMeta = "meta"
 )
