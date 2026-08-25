@@ -19,10 +19,18 @@ type BuildResult struct {
 	Content *model.SessionContent
 }
 
+type RebuildScope int
+
+const (
+	RebuildScopeTouched RebuildScope = iota
+	RebuildScopeProvider
+)
+
 type Normalizer interface {
 	Provider() string
 	ExtractLogs(*logspb.LogsData) []RawRecord
 	ExtractTraces(*tracepb.TracesData) []RawRecord
 
+	RebuildScope() RebuildScope
 	Rebuild(byNativeID map[string][]RawRecord, touchedIDs []string) []BuildResult
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 )
 
 type Querier interface {
@@ -49,6 +50,43 @@ func Insert(ctx context.Context, db Querier, records []Record) error {
 		}
 	}
 	return nil
+}
+
+func LoadByNativeIDs(ctx context.Context, db Querier, provider string, nativeIDs []string) (map[string][]Record, error) {
+	byNativeID := make(map[string][]Record, len(nativeIDs))
+	if len(nativeIDs) == 0 {
+		return byNativeID, nil
+	}
+
+	placeholders := make([]string, len(nativeIDs))
+	args := make([]any, 0, len(nativeIDs)+1)
+	args = append(args, provider)
+	for index, nativeID := range nativeIDs {
+		placeholders[index] = "?"
+		args = append(args, nativeID)
+	}
+
+	rows, err := db.QueryContext(ctx, `
+		SELECT `+selectColumns+`
+		FROM raw_signal
+		WHERE provider = ? AND native_id IN (`+strings.Join(placeholders, ", ")+`)
+		ORDER BY timestamp_unix_ms, id`, args...)
+	if err != nil {
+		return nil, fmt.Errorf("load raw_signal by native id: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		record, err := scanRecord(rows)
+		if err != nil {
+			return nil, fmt.Errorf("scan raw_signal row: %w", err)
+		}
+		byNativeID[record.NativeID] = append(byNativeID[record.NativeID], record)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate raw_signal rows: %w", err)
+	}
+	return byNativeID, nil
 }
 
 func LoadByProvider(ctx context.Context, db Querier, provider string) (map[string][]Record, error) {

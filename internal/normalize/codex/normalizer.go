@@ -20,6 +20,10 @@ func (normalizer *Normalizer) Provider() string {
 	return "codex"
 }
 
+func (normalizer *Normalizer) RebuildScope() shared.RebuildScope {
+	return shared.RebuildScopeProvider
+}
+
 func (normalizer *Normalizer) ExtractLogs(data *logspb.LogsData) []shared.RawRecord {
 	return eventsToRecords(ExtractEvents(data))
 }
@@ -28,7 +32,7 @@ func (normalizer *Normalizer) ExtractTraces(*tracepb.TracesData) []shared.RawRec
 	return nil
 }
 
-func (normalizer *Normalizer) Rebuild(byNativeID map[string][]shared.RawRecord, _ []string) []shared.BuildResult {
+func (normalizer *Normalizer) Rebuild(byNativeID map[string][]shared.RawRecord, touchedIDs []string) []shared.BuildResult {
 	all := recordsToEventsByConversation(byNativeID)
-	return normalizer.builder.Build(all)
+	return normalizer.builder.Build(all, touchedIDs)
 }

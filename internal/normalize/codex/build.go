@@ -24,7 +24,7 @@ func NewBuilder(catalog *pricing.Catalog, estimator *tokenize.Estimator) *Builde
 	}
 }
 
-func (builder *Builder) Build(all map[string][]Event) []shared.BuildResult {
+func (builder *Builder) Build(all map[string][]Event, touchedIDs []string) []shared.BuildResult {
 	rootID := rootConversation(all)
 	if rootID == "" {
 		return nil
@@ -32,10 +32,11 @@ func (builder *Builder) Build(all map[string][]Event) []shared.BuildResult {
 	subagents := subagentMap(all)
 	approvals := approvalsByCallID(all)
 	waits := waitResultsByAgentID(all)
+	affected := affectedRoots(subagents, touchedIDs)
 	var results []shared.BuildResult
 	for id, events := range all {
 
-		if id == "" || subagents[id] != nil {
+		if id == "" || subagents[id] != nil || !affected[id] {
 			continue
 		}
 		seed, content := builder.buildSession(id, events, all, subagents, approvals, waits)

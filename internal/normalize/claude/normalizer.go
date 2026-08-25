@@ -20,6 +20,10 @@ func (normalizer *Normalizer) Provider() string {
 	return "claude"
 }
 
+func (normalizer *Normalizer) RebuildScope() shared.RebuildScope {
+	return shared.RebuildScopeTouched
+}
+
 func (normalizer *Normalizer) ExtractLogs(data *logspb.LogsData) []shared.RawRecord {
 	return eventsToRecords(ExtractEvents(data))
 }
