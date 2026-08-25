@@ -17,6 +17,8 @@ func main() {
 			os.Exit(cli.RunUninstall(os.Args[2:]))
 		case "claim":
 			os.Exit(cli.RunClaim(os.Args[2:]))
+		case "restart-if-running":
+			os.Exit(cli.RunRestartIfRunning())
 		case "help", "-h", "--help":
 			cli.PrintUsage()
 			os.Exit(0)
