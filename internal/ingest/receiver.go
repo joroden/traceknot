@@ -122,30 +122,17 @@ func (receiver *Receiver) Ingest(ctx context.Context, normalizer shared.Normaliz
 		touchedIDs = append(touchedIDs, nativeID)
 	}
 
-	var byProvider map[string][]store.RawSignalRecord
-	var err error
-	if normalizer.RebuildScope() == shared.RebuildScopeProvider {
-		byProvider, err = receiver.store.LoadRawSignalByProvider(ctx, provider)
-	} else {
-		byProvider, err = receiver.store.LoadRawSignalByNativeIDs(ctx, provider, touchedIDs)
-	}
+	byProvider, err := receiver.loadScoped(ctx, normalizer, provider, touchedIDs)
 	if err != nil {
 		receiver.logger.Error("load raw_signal failed", "provider", provider, "error", err)
 		return
 	}
-	byNativeID := make(map[string][]shared.RawRecord, len(byProvider))
-	for nativeID, rows := range byProvider {
-		converted := make([]shared.RawRecord, 0, len(rows))
-		for _, row := range rows {
-			converted = append(converted, shared.RawRecord{
-				NativeID:    row.NativeID,
-				Signal:      row.Signal,
-				DedupKey:    row.DedupKey,
-				TimestampMs: row.TimestampMs,
-				PayloadJSON: row.PayloadJSON,
-			})
+	byNativeID := toRawRecords(byProvider)
+
+	if linked, ok := normalizer.(shared.LinkedNormalizer); ok {
+		if err := receiver.store.SaveConversationRoots(ctx, provider, linked.ResolveRoots(byNativeID)); err != nil {
+			receiver.logger.Error("save conversation roots failed", "provider", provider, "error", err)
 		}
-		byNativeID[nativeID] = converted
 	}
 
 	for _, result := range normalizer.Rebuild(byNativeID, touchedIDs) {
@@ -163,4 +150,82 @@ func (receiver *Receiver) Ingest(ctx context.Context, normalizer shared.Normaliz
 			"tools", len(result.Content.ToolCalls),
 			"agents", len(result.Content.Agents))
 	}
+}
+
+func (receiver *Receiver) loadScoped(
+	ctx context.Context,
+	normalizer shared.Normalizer,
+	provider string,
+	touchedIDs []string,
+) (map[string][]store.RawSignalRecord, error) {
+	if _, ok := normalizer.(shared.LinkedNormalizer); ok {
+		return receiver.loadFamilyScoped(ctx, provider, touchedIDs)
+	}
+	if normalizer.RebuildScope() == shared.RebuildScopeProvider {
+		return receiver.store.LoadRawSignalByProvider(ctx, provider)
+	}
+	return receiver.store.LoadRawSignalByNativeIDs(ctx, provider, touchedIDs)
+}
+
+func (receiver *Receiver) loadFamilyScoped(
+	ctx context.Context,
+	provider string,
+	touchedIDs []string,
+) (map[string][]store.RawSignalRecord, error) {
+	knownRoots, err := receiver.store.ConversationRoots(ctx, provider, touchedIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	rootSet := make(map[string]struct{}, len(touchedIDs))
+	for _, nativeID := range touchedIDs {
+		if root, ok := knownRoots[nativeID]; ok {
+			rootSet[root] = struct{}{}
+		} else {
+			rootSet[nativeID] = struct{}{}
+		}
+	}
+	roots := make([]string, 0, len(rootSet))
+	for root := range rootSet {
+		roots = append(roots, root)
+	}
+
+	family, err := receiver.store.ConversationFamily(ctx, provider, roots)
+	if err != nil {
+		return nil, err
+	}
+
+	scope := make(map[string]struct{}, len(family)+len(touchedIDs)+len(roots))
+	for _, nativeID := range family {
+		scope[nativeID] = struct{}{}
+	}
+	for _, nativeID := range touchedIDs {
+		scope[nativeID] = struct{}{}
+	}
+	for _, root := range roots {
+		scope[root] = struct{}{}
+	}
+	scopedIDs := make([]string, 0, len(scope))
+	for nativeID := range scope {
+		scopedIDs = append(scopedIDs, nativeID)
+	}
+	return receiver.store.LoadRawSignalByNativeIDs(ctx, provider, scopedIDs)
+}
+
+func toRawRecords(byProvider map[string][]store.RawSignalRecord) map[string][]shared.RawRecord {
+	byNativeID := make(map[string][]shared.RawRecord, len(byProvider))
+	for nativeID, rows := range byProvider {
+		converted := make([]shared.RawRecord, 0, len(rows))
+		for _, row := range rows {
+			converted = append(converted, shared.RawRecord{
+				NativeID:    row.NativeID,
+				Signal:      row.Signal,
+				DedupKey:    row.DedupKey,
+				TimestampMs: row.TimestampMs,
+				PayloadJSON: row.PayloadJSON,
+			})
+		}
+		byNativeID[nativeID] = converted
+	}
+	return byNativeID
 }

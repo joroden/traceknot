@@ -134,21 +134,17 @@ func ListGroups(ctx context.Context, db Querier, filter GroupListFilter) (GroupL
 		scopeArgs = append(scopeArgs, filter.WorkItemKey, filter.WorkItemProvider)
 	}
 
-	var result GroupListResult
-	countQuery := "WITH " + cte + " SELECT COUNT(*) FROM grouped" + scopeSQL
-	countArgs := append(append([]any{}, args...), scopeArgs...)
-	if err := db.QueryRowContext(ctx, countQuery, countArgs...).Scan(&result.TotalCount); err != nil {
-		return GroupListResult{}, fmt.Errorf("count work item groups: %w", err)
-	}
-
 	limit := filter.Limit
 	if limit <= 0 || limit > 500 {
 		limit = 100
 	}
 
+	var result GroupListResult
+	result.Groups = []GroupRow{}
+
 	listQuery := "WITH " + cte + `
 		SELECT work_item_key, work_item_provider, title, is_unclaimed, session_count, cost,
-			duration_ms, input_tokens, output_tokens
+			duration_ms, input_tokens, output_tokens, COUNT(*) OVER () AS total_count
 		FROM grouped` + scopeSQL + `
 		ORDER BY ` + buildGroupOrderBy(filter.Sort) + `
 		LIMIT ? OFFSET ?`
@@ -161,7 +157,6 @@ func ListGroups(ctx context.Context, db Querier, filter GroupListFilter) (GroupL
 	}
 	defer rows.Close()
 
-	result.Groups = []GroupRow{}
 	for rows.Next() {
 		var row GroupRow
 		var isUnclaimed int
@@ -169,6 +164,7 @@ func ListGroups(ctx context.Context, db Querier, filter GroupListFilter) (GroupL
 			&row.WorkItemKey, &row.WorkItemProvider, &row.Title, &isUnclaimed,
 			&row.SessionCount, &row.Cost,
 			&row.DurationMs, &row.InputTokens, &row.OutputTokens,
+			&result.TotalCount,
 		); err != nil {
 			return GroupListResult{}, fmt.Errorf("scan work item group: %w", err)
 		}
@@ -177,6 +173,14 @@ func ListGroups(ctx context.Context, db Querier, filter GroupListFilter) (GroupL
 	}
 	if err := rows.Err(); err != nil {
 		return GroupListResult{}, fmt.Errorf("iterate work item groups: %w", err)
+	}
+
+	if len(result.Groups) == 0 && filter.Offset > 0 {
+		countQuery := "WITH " + cte + " SELECT COUNT(*) FROM grouped" + scopeSQL
+		countArgs := append(append([]any{}, args...), scopeArgs...)
+		if err := db.QueryRowContext(ctx, countQuery, countArgs...).Scan(&result.TotalCount); err != nil {
+			return GroupListResult{}, fmt.Errorf("count work item groups: %w", err)
+		}
 	}
 	return result, nil
 }

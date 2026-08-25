@@ -49,6 +49,12 @@ func (receiver *Receiver) RebuildProvider(ctx context.Context, normalizer shared
 
 	results := normalizer.Rebuild(newByNativeID, touchedIDs)
 
+	if linked, ok := normalizer.(shared.LinkedNormalizer); ok {
+		if err := receiver.store.SaveConversationRoots(ctx, provider, linked.ResolveRoots(newByNativeID)); err != nil {
+			return fmt.Errorf("save conversation roots during rebuild: %w", err)
+		}
+	}
+
 	oldSessionIDs, err := receiver.store.ListSessionIDsForProvider(ctx, provider)
 	if err != nil {
 		return fmt.Errorf("list existing sessions for rebuild: %w", err)

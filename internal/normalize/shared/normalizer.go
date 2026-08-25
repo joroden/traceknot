@@ -34,3 +34,8 @@ type Normalizer interface {
 	RebuildScope() RebuildScope
 	Rebuild(byNativeID map[string][]RawRecord, touchedIDs []string) []BuildResult
 }
+
+type LinkedNormalizer interface {
+	Normalizer
+	ResolveRoots(byNativeID map[string][]RawRecord) map[string]string
+}
