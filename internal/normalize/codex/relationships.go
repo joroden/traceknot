@@ -12,6 +12,7 @@ type subagentLink struct {
 	nickname       string
 	spawnCallID    string
 	spawnPrompt    string
+	parentID       string
 }
 
 type approvalInfo struct {
@@ -50,17 +51,38 @@ func rootConversation(all map[string][]Event) string {
 
 func subagentMap(all map[string][]Event) map[string]*subagentLink {
 	output := make(map[string]*subagentLink)
-	for _, events := range all {
+	for nativeID, events := range all {
 		for _, event := range events {
 			if event.Name != eventToolResult || toolName(event) != spawnToolName {
 				continue
 			}
 			if link := parseSpawnLink(event); link != nil {
+				link.parentID = nativeID
 				output[link.conversationID] = link
 			}
 		}
 	}
 	return output
+}
+
+func rootFor(nativeID string, subagents map[string]*subagentLink) string {
+	seen := make(map[string]bool)
+	for {
+		link, ok := subagents[nativeID]
+		if !ok || link.parentID == "" || seen[nativeID] {
+			return nativeID
+		}
+		seen[nativeID] = true
+		nativeID = link.parentID
+	}
+}
+
+func affectedRoots(subagents map[string]*subagentLink, touchedIDs []string) map[string]bool {
+	affected := make(map[string]bool, len(touchedIDs))
+	for _, nativeID := range touchedIDs {
+		affected[rootFor(nativeID, subagents)] = true
+	}
+	return affected
 }
 
 func approvalsByCallID(all map[string][]Event) map[string]approvalInfo {

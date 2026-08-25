@@ -117,7 +117,18 @@ func (receiver *Receiver) Ingest(ctx context.Context, normalizer shared.Normaliz
 		return
 	}
 
-	byProvider, err := receiver.store.LoadRawSignalByProvider(ctx, provider)
+	touchedIDs := make([]string, 0, len(touched))
+	for nativeID := range touched {
+		touchedIDs = append(touchedIDs, nativeID)
+	}
+
+	var byProvider map[string][]store.RawSignalRecord
+	var err error
+	if normalizer.RebuildScope() == shared.RebuildScopeProvider {
+		byProvider, err = receiver.store.LoadRawSignalByProvider(ctx, provider)
+	} else {
+		byProvider, err = receiver.store.LoadRawSignalByNativeIDs(ctx, provider, touchedIDs)
+	}
 	if err != nil {
 		receiver.logger.Error("load raw_signal failed", "provider", provider, "error", err)
 		return
@@ -135,11 +146,6 @@ func (receiver *Receiver) Ingest(ctx context.Context, normalizer shared.Normaliz
 			})
 		}
 		byNativeID[nativeID] = converted
-	}
-
-	touchedIDs := make([]string, 0, len(touched))
-	for nativeID := range touched {
-		touchedIDs = append(touchedIDs, nativeID)
 	}
 
 	for _, result := range normalizer.Rebuild(byNativeID, touchedIDs) {
