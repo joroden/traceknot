@@ -1,11 +1,15 @@
 # traceknot
 
-traceknot is a local telemetry collector for AI coding agents (Claude Code, Codex,
-GitHub Copilot CLI). It tracks your agent sessions and lets you attribute each one
-to a GitHub, Jira or custom work item, so you get a local dashboard of what got worked on,
-by which agent and how much did a task truly cost — all stored on your own machine.
+You run a coding agent — and afterward have no idea what any of it actually
+cost, or which ticket it was even for. traceknot is a local collector that
+watches your agent sessions, ties each one back to a GitHub/Jira issue, and
+gives you a dashboard of real cost and activity per task — no account, nothing
+leaves your machine.
 
-The application uses a combination of OTLP ingestion with some additional data from local session files to supplement information that misses from the OTEL exporters of certain providers.
+Beyond the top-line number, you can open any session and see where it actually
+went — which step ran long, where the agent stalled or looped, and what each
+part cost — so you know exactly where the time and money went, not just how
+much.
 
 ## Get Started
 
@@ -23,7 +27,8 @@ curl -fsSL https://traceknot.com/install.sh | bash
 irm https://traceknot.com/install.ps1 | iex
 ```
 
-Launch your agent CLI from a new terminal instance after installation so that the configured environment variables can take effect.
+Launch your agent from a new terminal instance after installation so that the configured environment variables can take effect.
+In the case of VSCode, make sure to restart all open instances.
 
 ### Current Support
 

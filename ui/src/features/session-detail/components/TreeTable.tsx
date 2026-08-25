@@ -44,7 +44,7 @@ export function TreeTable({
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-zinc-800 light:border-zinc-200">
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto">
         <div
-          className="sticky top-0 z-10 grid h-9 shrink-0 items-center border-b border-zinc-800 bg-zinc-900 pr-2 text-xs font-semibold uppercase tracking-wide text-zinc-500 light:border-zinc-200 light:bg-zinc-100 light:text-zinc-500"
+          className="sticky top-0 z-10 grid h-9 shrink-0 items-center gap-x-2 border-b border-zinc-800 bg-zinc-900 pr-2 text-xs font-semibold uppercase tracking-wide text-zinc-500 light:border-zinc-200 light:bg-zinc-100 light:text-zinc-500"
           style={{ gridTemplateColumns: GRID_TEMPLATE }}
         >
           {COLUMN_TITLES.map((column) => (
@@ -54,9 +54,7 @@ export function TreeTable({
               className={
                 column.key === "name"
                   ? "sticky left-0 z-10 bg-zinc-900 pl-3 light:bg-zinc-100"
-                  : column.key === "cost"
-                    ? "pr-3 text-right"
-                    : "px-2 text-right"
+                  : column.headerClassName
               }
             >
               {column.title}

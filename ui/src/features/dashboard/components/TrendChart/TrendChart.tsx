@@ -1,6 +1,6 @@
 import {
-  Bar,
-  BarChart,
+  Area,
+  AreaChart,
   CartesianGrid,
   ResponsiveContainer,
   Tooltip,
@@ -41,6 +41,9 @@ export function TrendChart({ buckets, granularityMs }: TrendChartProps) {
     const row: Record<string, number | string> = {
       label: formatBucketLabel(bucket.start_unix_ms, granularityMs),
     };
+    for (const name of series) {
+      row[name] = 0;
+    }
     for (const model of bucket.models) {
       row[model.name] = model.cost;
     }
@@ -50,7 +53,15 @@ export function TrendChart({ buckets, granularityMs }: TrendChartProps) {
   return (
     <div className="h-56">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
+        <AreaChart data={data} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
+          <defs>
+            {series.map((name, index) => (
+              <linearGradient key={name} id={`trend-fill-${index}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={MODEL_COLORS[index % MODEL_COLORS.length]} stopOpacity={0.45} />
+                <stop offset="100%" stopColor={MODEL_COLORS[index % MODEL_COLORS.length]} stopOpacity={0.05} />
+              </linearGradient>
+            ))}
+          </defs>
           <CartesianGrid stroke="#26262b" strokeDasharray="3 3" vertical={false} />
           <XAxis
             dataKey="label"
@@ -83,15 +94,17 @@ export function TrendChart({ buckets, granularityMs }: TrendChartProps) {
             }
           />
           {series.map((name, index) => (
-            <Bar
+            <Area
               key={name}
+              type="monotone"
               dataKey={name}
               stackId="cost"
-              fill={MODEL_COLORS[index % MODEL_COLORS.length]}
-              radius={index === series.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]}
+              stroke={MODEL_COLORS[index % MODEL_COLORS.length]}
+              strokeWidth={1.5}
+              fill={`url(#trend-fill-${index})`}
             />
           ))}
-        </BarChart>
+        </AreaChart>
       </ResponsiveContainer>
     </div>
   );

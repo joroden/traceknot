@@ -37,14 +37,17 @@ export function SessionDetailPage() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
-      <SessionHeader meta={meta} />
-      <TreeToolbar
-        query={query}
-        onQueryChange={setQuery}
-        visibleCount={visible.length}
-        onExpandAll={expandAll}
-        onCollapseAll={collapseAll}
-      />
+      <div className="flex flex-wrap items-center gap-4 rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3 light:border-zinc-200 light:bg-white">
+        <SessionHeader meta={meta} />
+        <div className="hidden h-5 w-px shrink-0 bg-zinc-800 sm:block light:bg-zinc-200" />
+        <TreeToolbar
+          query={query}
+          onQueryChange={setQuery}
+          visibleCount={visible.length}
+          onExpandAll={expandAll}
+          onCollapseAll={collapseAll}
+        />
+      </div>
       <div className="flex min-h-0 flex-1 gap-3">
         <TreeTable
           rows={visible}
