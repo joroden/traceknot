@@ -20,6 +20,9 @@ var pickerMigrationSQL string
 //go:embed migrations/003-normalizer-versions.sql
 var normalizerVersionsMigrationSQL string
 
+//go:embed migrations/004-scaling-indexes.sql
+var scalingIndexesMigrationSQL string
+
 type Store struct {
 	db        *sql.DB
 	batchLock sync.Mutex
@@ -56,6 +59,10 @@ func Open(path string) (*Store, error) {
 	if _, err := store.db.ExecContext(context.Background(), normalizerVersionsMigrationSQL); err != nil {
 		_ = db.Close()
 		return nil, fmt.Errorf("apply normalizer versions migration: %w", err)
+	}
+	if _, err := store.db.ExecContext(context.Background(), scalingIndexesMigrationSQL); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("apply scaling indexes migration: %w", err)
 	}
 	if err := store.seedInstallTime(); err != nil {
 		_ = db.Close()

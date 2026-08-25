@@ -36,3 +36,13 @@ func (normalizer *Normalizer) Rebuild(byNativeID map[string][]shared.RawRecord, 
 	all := recordsToEventsByConversation(byNativeID)
 	return normalizer.builder.Build(all, touchedIDs)
 }
+
+func (normalizer *Normalizer) ResolveRoots(byNativeID map[string][]shared.RawRecord) map[string]string {
+	all := recordsToEventsByConversation(byNativeID)
+	subagents := subagentMap(all)
+	roots := make(map[string]string, len(all))
+	for nativeID := range all {
+		roots[nativeID] = rootFor(nativeID, subagents)
+	}
+	return roots
+}
