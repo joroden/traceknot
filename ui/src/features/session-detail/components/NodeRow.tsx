@@ -52,7 +52,7 @@ export function NodeRow({
 
   return (
     <div
-      className={`grid h-9 cursor-pointer items-center border-b border-zinc-800/60 pr-2 text-sm transition-colors last:border-b-0 hover:bg-zinc-900/70 light:border-zinc-200/60 light:hover:bg-zinc-100/70 ${selected ? "bg-violet-500/10 hover:bg-violet-500/10 light:bg-violet-500/10" : ""}`}
+      className={`grid h-9 cursor-pointer items-center gap-x-2 border-b border-zinc-800/60 pr-2 text-sm transition-colors last:border-b-0 hover:bg-zinc-900/70 light:border-zinc-200/60 light:hover:bg-zinc-100/70 ${selected ? "bg-violet-500/10 hover:bg-violet-500/10 light:bg-violet-500/10" : ""}`}
       style={{ gridTemplateColumns: GRID_TEMPLATE }}
       onClick={() => onSelect(row.node_id)}
       role="button"
@@ -99,10 +99,10 @@ export function NodeRow({
       <div className="flex items-center justify-center">
         <StatusDot status={row.status} />
       </div>
-      <div className="flex items-center justify-end pr-3 font-mono text-xs tabular-nums text-zinc-400 light:text-zinc-500">
+      <div className="flex items-center justify-center font-mono text-xs tabular-nums text-zinc-400 light:text-zinc-500">
         {row.subagent_count > 0 ? row.subagent_count : "—"}
       </div>
-      <div className="flex items-center pr-2 text-xs text-zinc-400 light:text-zinc-500">
+      <div className="flex items-center pl-2 pr-2 text-xs text-zinc-400 light:text-zinc-500">
         <span className="truncate">{row.model ?? "—"}</span>
       </div>
       <div className="flex items-center justify-end pr-3 font-mono text-xs tabular-nums text-zinc-400 light:text-zinc-500">

@@ -22,7 +22,7 @@ export function SegmentedControl<T extends string>({
           type="button"
           className={
             option.value === value
-              ? "cursor-pointer rounded-md bg-zinc-800 px-3 py-1.5 text-sm font-semibold text-zinc-100 transition-colors light:bg-zinc-200 light:text-zinc-900"
+              ? "cursor-pointer rounded-md bg-violet-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors"
               : "cursor-pointer rounded-md px-3 py-1.5 text-sm text-zinc-400 transition-colors hover:text-zinc-100 light:text-zinc-500 light:hover:text-zinc-900"
           }
           onClick={() => onChange(option.value)}

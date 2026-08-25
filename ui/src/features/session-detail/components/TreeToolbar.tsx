@@ -16,7 +16,7 @@ export function TreeToolbar({
   onCollapseAll,
 }: TreeToolbarProps) {
   return (
-    <div className="flex flex-wrap items-center gap-3">
+    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
       {!query.trim() && (
         <div className="flex items-center gap-1 text-xs">
           <button
