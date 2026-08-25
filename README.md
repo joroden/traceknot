@@ -1,5 +1,7 @@
 # traceknot
 
+> https://traceknot.com/
+
 You run a coding agent — and afterward have no idea what any of it actually
 cost, or which ticket it was even for. traceknot is a local collector that
 watches your agent sessions, ties each one back to a GitHub/Jira issue, and
