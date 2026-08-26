@@ -22,19 +22,6 @@ func daemonRunning(ctx context.Context) bool {
 	return daemonHealthy(ctx, defaultServerURL)
 }
 
-func RunRestartIfRunning() int {
-	ctx := context.Background()
-	if !daemonRunning(ctx) {
-		return 0
-	}
-	stopDaemon(ctx, defaultServerURL)
-	if err := startDaemonNow(ctx); err != nil {
-		fmt.Fprintln(os.Stderr, "traceknot: restart:", err)
-		return 1
-	}
-	return 0
-}
-
 func daemonStatusLine(ctx context.Context) string {
 	if !daemonHealthy(ctx, defaultServerURL) {
 		return "Server: not running"
