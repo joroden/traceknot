@@ -17,6 +17,8 @@ func main() {
 			os.Exit(cli.RunUninstall(os.Args[2:]))
 		case "claim":
 			os.Exit(cli.RunClaim(os.Args[2:]))
+		case "export":
+			os.Exit(cli.RunExport(os.Args[2:]))
 		case "post-install":
 			os.Exit(cli.RunPostInstall())
 		case "help", "-h", "--help":
