@@ -4,7 +4,7 @@
 
 You run a coding agent — and afterward have no idea what any of it actually
 cost, or which ticket it was even for. traceknot is a local collector that
-watches your agent sessions, ties each one back to a GitHub/Jira issue, and
+watches your agent sessions, ties each one back to a GitHub/GitLab/Jira issue, and
 gives you a dashboard of real cost and activity per task — no account, nothing
 leaves your machine.
 
@@ -39,27 +39,29 @@ In the case of VSCode, make sure to restart all open instances.
 - Copilot CLI
 - VSCode Copilot Chat
 
-### Link GitHub or Jira issues (optional)
+### Link GitHub, GitLab, or Jira issues (optional)
 
-The session picker can search your real GitHub or Jira issues instead of a
-free-text label. It reuses whichever CLI you already have installed and signed
-in — no traceknot-specific setup:
+The session picker can search your real GitHub, GitLab, or Jira issues instead
+of a free-text label. It reuses whichever CLI you already have installed and
+signed in — no traceknot-specific setup:
 
 - **GitHub** — [GitHub CLI (`gh`)](https://cli.github.com),
   signed in via [`gh auth login`](https://cli.github.com/manual/gh_auth_login)
+- **GitLab** — [GitLab CLI (`glab`)](https://gitlab.com/gitlab-org/cli),
+  signed in via [`glab auth login`](https://docs.gitlab.com/cli/authentication/)
 - **Jira** — [Atlassian CLI (`acli`)](https://developer.atlassian.com/cloud/acli/guides/install-acli/),
   signed in via [`acli jira auth login`](https://developer.atlassian.com/cloud/acli/guides/how-to-get-started/)
 
 traceknot only *reads* through these CLIs to pull back an issue's key and title —
-it never creates, edits, or comments on anything in GitHub or Jira. Skip this and
-the picker still works with a free-text label.
+it never creates, edits, or comments on anything in GitHub, GitLab, or Jira. Skip
+this and the picker still works with a free-text label.
 
 ## Data & privacy
 
 Everything traceknot collects is stored locally in a SQLite database at
 `~/.traceknot/telemetry.sqlite`, served by a local dashboard at
 `http://127.0.0.1:4318`. Nothing is sent anywhere else — no account, no cloud
-sync, no analytics. The GitHub/Jira lookups above are the only outside calls
+sync, no analytics. The GitHub/GitLab/Jira lookups above are the only outside calls
 traceknot ever makes, and those are read-only, through your own CLI.
 
 `traceknot uninstall` removes the binary and all agent hooks but leaves

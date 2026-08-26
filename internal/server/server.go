@@ -141,7 +141,7 @@ func allowedOrigins(listenAddr string) map[string]bool {
 }
 
 func buildMux(storeHandle *store.Store, receiver *ingest.Receiver, rebuildTracker *rebuildstatus.Status) http.Handler {
-	registry := providers.NewRegistry(providers.NewGitHub(), providers.NewJira())
+	registry := providers.NewRegistry(providers.NewGitHub(), providers.NewGitLab(), providers.NewJira())
 	picker := api.NewPicker(storeHandle, registry)
 	dashboard := api.NewDashboard(storeHandle)
 	sessionDetail := api.NewSessionDetail(storeHandle)
