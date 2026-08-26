@@ -72,7 +72,10 @@ func RunMenu() int {
 		selected = allHookBinaries(choices)
 	}
 
-	form := buildMenuForm(daemonStatusLine(ctx), autostartLabel, hookOptions(choices), &serverOn, &autostartOn, &selected)
+	skills := skillChoices()
+	selectedSkillBinaries := selectedSkills(skills)
+
+	form := buildMenuForm(daemonStatusLine(ctx), autostartLabel, hookOptions(choices), &serverOn, &autostartOn, &selected, skillOptions(skills), &selectedSkillBinaries)
 	if err := form.Run(); err != nil {
 		return 1
 	}
@@ -81,10 +84,14 @@ func RunMenu() int {
 	applyAutostartToggle(ctx, autostartWasOn, autostartOn)
 	disableAutostartIfRequested(ctx)
 	applyHookSelection(ctx, choices, selected, exe)
+	applySkillSelection(skills, selectedSkillBinaries)
 	return 0
 }
 
-func buildMenuForm(status string, autostartLabel string, options []huh.Option[string], serverOn *bool, autostartOn *bool, selected *[]string) *huh.Form {
+func buildMenuForm(
+	status string, autostartLabel string, options []huh.Option[string], serverOn *bool, autostartOn *bool, selected *[]string,
+	skillOptions []huh.Option[string], selectedSkills *[]string,
+) *huh.Form {
 	return huh.NewForm(
 		huh.NewGroup(
 			huh.NewNote().Description(status+"\n"+autostartLabel),
@@ -98,6 +105,13 @@ func buildMenuForm(status string, autostartLabel string, options []huh.Option[st
 				Options(options...).
 				Value(selected),
 		).Title("Hooks"),
+		huh.NewGroup(
+			huh.NewMultiSelect[string]().
+				Title("Session analysis skill").
+				Description("Lets the agent export and read its own session telemetry when you ask it to. Space to toggle, enter to confirm.").
+				Options(skillOptions...).
+				Value(selectedSkills),
+		).Title("Skill"),
 	)
 }
 
