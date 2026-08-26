@@ -13,6 +13,41 @@ import (
 	"traceknot/internal/install/autostart"
 )
 
+func RunPostInstall() int {
+	ctx := context.Background()
+	exe := resolveExe()
+
+	if err := agentenv.ApplyEnv(filepath.Dir(exe)); err != nil {
+		fmt.Fprintln(os.Stderr, "traceknot: env:", err)
+		return 1
+	}
+	if err := agentenv.ApplyCodex(); err != nil {
+		fmt.Fprintln(os.Stderr, "traceknot: codex config:", err)
+	}
+
+	wasRunning := daemonRunning(ctx)
+	if wasRunning {
+		stopDaemon(ctx, defaultServerURL)
+		if err := startDaemonNow(ctx); err != nil {
+			fmt.Fprintln(os.Stderr, "traceknot: restart:", err)
+		}
+	}
+
+	autostartWasOn, _ := autostartStatus(ctx)
+	choices := providerChoices(exe)
+	if !isFreshInstall(wasRunning, autostartWasOn, choices) {
+		fmt.Println("Existing installation detected — run `traceknot` anytime to reconfigure.")
+		return 0
+	}
+
+	if !IsInteractive() {
+		fmt.Println("Run `traceknot` to update your settings (server, autostart, hooks).")
+		return 0
+	}
+
+	return RunMenu()
+}
+
 func RunMenu() int {
 	ctx := context.Background()
 	exe := resolveExe()

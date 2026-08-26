@@ -98,15 +98,12 @@ chmod +x "$TMP_BIN"
 mv "$TMP_BIN" "$BIN_DIR/traceknot"
 tk_log "binary installed at $BIN_DIR/traceknot"
 
-"$BIN_DIR/traceknot" restart-if-running
-tk_log "restart-if-running done"
-
 if { [[ ! -t 0 ]] || [[ ! -t 1 ]]; } && [[ -e /dev/tty ]]; then
-	"$BIN_DIR/traceknot" < /dev/tty
+	"$BIN_DIR/traceknot" post-install < /dev/tty
 else
-	"$BIN_DIR/traceknot"
+	"$BIN_DIR/traceknot" post-install
 fi
-tk_log "install: interactive menu completed"
+tk_log "post-install done"
 tk_log "install complete"
 
 echo ""

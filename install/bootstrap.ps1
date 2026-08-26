@@ -37,8 +37,8 @@ try {
 }
 Log-TkInstall "binary installed at $Binary"
 
-& $Binary
-Log-TkInstall "install: interactive menu completed"
+& $Binary post-install
+Log-TkInstall "post-install done"
 Log-TkInstall "install complete"
 
 Write-Host ""
