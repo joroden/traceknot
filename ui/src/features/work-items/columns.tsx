@@ -150,13 +150,37 @@ function ModelsHeader(context: HeaderContext) {
   );
 }
 
-function promptCell(info: RowContext) {
+function keyCell(info: RowContext) {
   const row = info.row.original;
   if (row.kind === "group") {
     const meta = requireMeta(info);
     return <GroupRowLabel group={row.group} expanded={meta.expandedGroups.has(groupIdentity(row.group))} />;
   }
-  return <span className="truncate text-zinc-100 light:text-zinc-900">{row.session.title}</span>;
+  const key = row.session.claim.work_item_key;
+  if (!key) {
+    return <span className="text-xs text-zinc-600">—</span>;
+  }
+  return <span className="truncate font-mono text-xs text-zinc-400 light:text-zinc-500">{key}</span>;
+}
+
+function titleOf(row: WorkItemsRow): string {
+  const title = row.kind === "group" ? row.group.title : row.session.title;
+  return title && title.trim().length > 0 ? title : "Untitled";
+}
+
+function promptCell(info: RowContext) {
+  const row = info.row.original;
+  if (row.kind === "group") {
+    return (
+      <span className="flex min-w-0 items-center gap-2">
+        <span className="truncate text-sm text-zinc-100 light:text-zinc-900">{titleOf(row)}</span>
+        <span className="shrink-0 text-xs text-zinc-500">
+          ({row.group.session_count} session{row.group.session_count === 1 ? "" : "s"})
+        </span>
+      </span>
+    );
+  }
+  return <span className="truncate text-zinc-100 light:text-zinc-900">{titleOf(row)}</span>;
 }
 
 function startedCell(info: RowContext) {
@@ -241,9 +265,16 @@ function claimCell(info: RowContext) {
 
 export const workItemsColumns: TableColumn<WorkItemsRow>[] = [
   {
+    id: "key",
+    accessorFn: (row: WorkItemsRow) => (row.kind === "group" ? row.group.work_item_key : row.session.claim.work_item_key ?? ""),
+    size: 160,
+    header: () => <ColumnHeader label="Key" />,
+    cell: keyCell,
+  },
+  {
     id: "prompt",
-    accessorFn: (row: WorkItemsRow) => (row.kind === "group" ? row.group.title : row.session.title),
-    size: 300,
+    accessorFn: (row: WorkItemsRow) => titleOf(row),
+    size: 270,
     header: PromptHeader,
     cell: promptCell,
   },
@@ -271,14 +302,14 @@ export const workItemsColumns: TableColumn<WorkItemsRow>[] = [
   {
     id: "models",
     accessorFn: (row: WorkItemsRow) => (row.kind === "group" ? [] : row.session.models),
-    size: 150,
+    size: 200,
     header: ModelsHeader,
     cell: modelsCell,
   },
   {
     id: "input_tokens",
     accessorFn: (row: WorkItemsRow) => (row.kind === "group" ? row.group.input_tokens : row.session.input_tokens.total),
-    size: 170,
+    size: 220,
     header: sortableHeader("input_tokens", "Input"),
     cell: inputTokensCell,
   },

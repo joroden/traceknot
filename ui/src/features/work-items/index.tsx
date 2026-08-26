@@ -110,6 +110,11 @@ export function WorkItemsPage() {
     return flat.rows.map((session): WorkItemsRow => ({ kind: "session", session }));
   }, [groupBy, grouped.rows, flat.rows]);
 
+  const columns = useMemo(
+    () => workItemsColumns.filter((column) => column.id !== (groupBy === "work_item" ? "claim" : "key")),
+    [groupBy],
+  );
+
   const loading = groupBy === "work_item" ? grouped.loading : flat.loading;
   const error = groupBy === "work_item" ? grouped.error : flat.error;
 
@@ -215,7 +220,7 @@ export function WorkItemsPage() {
       ) : (
         <div className={loading ? "min-h-0 flex-1 opacity-60" : "min-h-0 flex-1"}>
           <Table
-            columns={workItemsColumns}
+            columns={columns}
             data={rows}
             getRowId={(row: WorkItemsRow) =>
               row.kind === "group" ? `group:${row.group.work_item_provider}:${row.group.work_item_key}:${row.group.is_unclaimed}` : row.session.session_id

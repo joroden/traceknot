@@ -119,9 +119,9 @@ func buildGroupOrderBy(sort GroupSortSpec) string {
 		dir = "ASC"
 	}
 	if column == "title" {
-		return "is_unclaimed ASC, " + column + " " + dir
+		return "is_unclaimed DESC, " + column + " " + dir
 	}
-	return "is_unclaimed ASC, " + column + " " + dir + ", title ASC"
+	return "is_unclaimed DESC, " + column + " " + dir + ", title ASC"
 }
 
 func ListGroups(ctx context.Context, db Querier, filter GroupListFilter) (GroupListResult, error) {
