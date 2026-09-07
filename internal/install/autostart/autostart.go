@@ -123,6 +123,10 @@ func writeLaunchAgent(ctx context.Context, exe string) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return fmt.Errorf("mkdir plist dir: %w", err)
 	}
+	logPath := daemonLogPath()
+	if err := os.MkdirAll(filepath.Dir(logPath), 0o755); err != nil {
+		return fmt.Errorf("mkdir log dir: %w", err)
+	}
 	plist := "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
 		"<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n" +
 		"<plist version=\"1.0\">\n" +
@@ -137,6 +141,15 @@ func writeLaunchAgent(ctx context.Context, exe string) error {
 		"    <true/>\n" +
 		"    <key>KeepAlive</key>\n" +
 		"    <true/>\n" +
+		"    <key>StandardOutPath</key>\n" +
+		"    <string>" + logPath + "</string>\n" +
+		"    <key>StandardErrorPath</key>\n" +
+		"    <string>" + logPath + "</string>\n" +
+		"    <key>EnvironmentVariables</key>\n" +
+		"    <dict>\n" +
+		"      <key>HOME</key>\n" +
+		"      <string>" + home() + "</string>\n" +
+		"    </dict>\n" +
 		"  </dict>\n" +
 		"</plist>\n"
 	if err := os.WriteFile(path, []byte(plist), 0o644); err != nil {
@@ -145,6 +158,10 @@ func writeLaunchAgent(ctx context.Context, exe string) error {
 	runQuiet(ctx, "launchctl", "bootout", "gui/"+fmt.Sprint(os.Getuid()), path)
 	runQuiet(ctx, "launchctl", "bootstrap", "gui/"+fmt.Sprint(os.Getuid()), path)
 	return nil
+}
+
+func daemonLogPath() string {
+	return filepath.Join(home(), ".traceknot", "daemon.log")
 }
 
 func runKeyPath() string {
