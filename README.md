@@ -1,17 +1,42 @@
+<p align="center">
+  <img src=".github/images/logo.svg" width="56" height="56" alt="traceknot" />
+</p>
+
 # traceknot
 
-> https://traceknot.com/
+<p>
+  <a href="https://github.com/joroden/traceknot/releases"><img src="https://img.shields.io/github/v/release/joroden/traceknot?color=7c3aed" alt="Latest release" /></a>
+  <a href="go.mod"><img src="https://img.shields.io/github/go-mod/go-version/joroden/traceknot?color=00ADD8" alt="Go version" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/joroden/traceknot?color=blue" alt="License" /></a>
+  <a href="https://traceknot.com"><img src="https://img.shields.io/badge/website-traceknot.com-7c3aed" alt="Website" /></a>
+</p>
 
-You run a coding agent — and afterward have no idea what any of it actually
-cost, or which ticket it was even for. traceknot is a local collector that
-watches your agent sessions, ties each one back to a GitHub/GitLab/Jira issue, and
-gives you a dashboard of real cost and activity per task — no account, nothing
-leaves your machine.
+**Know what every work item actually cost.** traceknot is a local telemetry
+collector for AI coding agents (Claude Code, Codex CLI, Copilot CLI, VSCode
+Copilot Chat). It ties each session back to a GitHub/GitLab/Jira issue and
+gives you a dashboard of real cost and activity per task — no account,
+nothing leaves your machine.
 
 Beyond the top-line number, you can open any session and see where it actually
 went — which step ran long, where the agent stalled or looped, and what each
 part cost — so you know exactly where the time and money went, not just how
 much.
+
+Every session starts by claiming a work item:
+
+![Attach a session to a GitHub, GitLab, or Jira work item](.github/images/item_picker.png)
+
+...and rolls up into a dashboard of real cost and activity per task:
+
+![traceknot dashboard](.github/images/dashboard.png)
+
+- Pauses each agent session with a hook until you claim the work item it's
+  for — attribution is enforced, not inferred
+- Tracks real cost per session: tokens, cache tier, and tool calls, rolled up
+  per task rather than per month
+- Drill into any session as a tree of prompts, chat turns, tool calls, and
+  subagents, each with its own cost breakdown
+- Surfaces unclaimed sessions so nothing gets lost
 
 ## Get Started
 
