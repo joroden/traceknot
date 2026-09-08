@@ -1,12 +1,7 @@
-<p align="center">
-  <img src=".github/images/logo.svg" width="56" height="56" alt="traceknot" />
-</p>
-
-# traceknot
+# <img src=".github/images/logo.svg" width="34" height="34" valign="bottom" alt="" /> traceknot
 
 <p>
   <a href="https://github.com/joroden/traceknot/releases"><img src="https://img.shields.io/github/v/release/joroden/traceknot?color=7c3aed" alt="Latest release" /></a>
-  <a href="go.mod"><img src="https://img.shields.io/github/go-mod/go-version/joroden/traceknot?color=00ADD8" alt="Go version" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/joroden/traceknot?color=blue" alt="License" /></a>
   <a href="https://traceknot.com"><img src="https://img.shields.io/badge/website-traceknot.com-7c3aed" alt="Website" /></a>
 </p>
@@ -22,18 +17,18 @@ went — which step ran long, where the agent stalled or looped, and what each
 part cost — so you know exactly where the time and money went, not just how
 much.
 
-Every session starts by claiming a work item:
+**Claim the work item.** Every agent session pauses until it's attached to a
+GitHub, GitLab, or Jira issue — attribution is enforced, not inferred.
 
 ![Attach a session to a GitHub, GitLab, or Jira work item](.github/images/item_picker.png)
 
-...and rolls up into a dashboard of real cost and activity per task:
+**See what it cost.** Every claimed session rolls up into one real total per
+task.
 
 ![traceknot dashboard](.github/images/dashboard.png)
 
-- Pauses each agent session with a hook until you claim the work item it's
-  for — attribution is enforced, not inferred
-- Tracks real cost per session: tokens, cache tier, and tool calls, rolled up
-  per task rather than per month
+- Tracks tokens, cache tier, and tool calls per session, rolled up per task
+  rather than per month
 - Drill into any session as a tree of prompts, chat turns, tool calls, and
   subagents, each with its own cost breakdown
 - Surfaces unclaimed sessions so nothing gets lost
