@@ -20,12 +20,12 @@ much.
 **Claim the work item.** Every agent session pauses until it's attached to a
 GitHub, GitLab, or Jira issue — attribution is enforced, not inferred.
 
-![Attach a session to a GitHub, GitLab, or Jira work item](.github/images/item_picker.png?v=2)
+![Attach a session to a GitHub, GitLab, or Jira work item](.github/images/claim.png)
 
 **See what it cost.** Every claimed session rolls up into one real total per
 task.
 
-![traceknot dashboard](.github/images/dashboard.png?v=2)
+![traceknot dashboard](.github/images/cost-dashboard.png)
 
 - Tracks tokens, cache tier, and tool calls per session, rolled up per task
   rather than per month
