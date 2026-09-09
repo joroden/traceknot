@@ -147,6 +147,7 @@ func buildMux(storeHandle *store.Store, receiver *ingest.Receiver, rebuildTracke
 	sessionDetail := api.NewSessionDetail(storeHandle)
 	sessionsList := api.NewSessions(storeHandle)
 	workItems := api.NewWorkItems(storeHandle)
+	settings := api.NewSettings()
 
 	mux := http.NewServeMux()
 	mux.Handle("/v1/", receiver.Handler())
@@ -154,6 +155,7 @@ func buildMux(storeHandle *store.Store, receiver *ingest.Receiver, rebuildTracke
 	mux.Handle("/api/v1/dashboard", dashboard.Handler())
 	mux.Handle("/api/v1/sessions", sessionsList.Handler())
 	mux.Handle("/api/v1/work-items", workItems.Handler())
+	mux.Handle("/api/v1/settings", settings.Handler())
 	mux.Handle("/api/v1/sessions/", sessionDetail.Handler())
 	mux.Handle("/api/v1/nodes/", sessionDetail.Handler())
 	mux.Handle("/", ui.Handler())

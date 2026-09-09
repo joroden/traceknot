@@ -1,4 +1,4 @@
-const API_BASE = "/api/v1";
+export const API_BASE = "/api/v1";
 
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(API_BASE + path, init);

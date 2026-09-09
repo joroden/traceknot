@@ -5,17 +5,21 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"traceknot/internal/config"
 )
 
 func RunClaim(args []string) int {
 	flags := flag.NewFlagSet("claim", flag.ExitOnError)
 	server := flags.String("server", "http://127.0.0.1:4318", "daemon base URL")
+	agent := flags.String("agent", "", "calling agent: claude, codex, or copilot")
 	_ = flags.Parse(args)
 	ctx := context.Background()
 
@@ -43,8 +47,20 @@ func RunClaim(args []string) int {
 		return 0
 	}
 	logClaim("claim: opening picker for session " + sessionID)
-	_ = RunSelect([]string{"--server", *server, "--session-id", sessionID})
-	return 0
+	outcome, err := runSelectFlow(ctx, *server, sessionID)
+	if err != nil {
+		logClaim("claim: session " + sessionID + ", picker failed: " + err.Error())
+	}
+	claimed := err == nil && outcome.Status == "claimed"
+	if claimed || *agent == "" {
+		return 0
+	}
+	if !config.Load().RequireWorkItem {
+		return 0
+	}
+	logClaim("claim: session " + sessionID + " blocked (" + *agent + "), required mode on")
+	fmt.Fprintln(os.Stderr, "No work item was assigned to this session and assignment is required. The run was not allowed to continue.")
+	return 2
 }
 
 func hookSessionID(payload []byte) (string, bool) {

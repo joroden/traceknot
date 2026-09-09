@@ -1,4 +1,4 @@
-import { postJSON, request } from "../lib/http";
+import { API_BASE, postJSON, request } from "../lib/http";
 
 export type ProviderStatus = "available" | "cli_missing" | "not_authenticated" | "error";
 
@@ -98,4 +98,12 @@ export async function postSkip(sessionID: string | null): Promise<void> {
     return;
   }
   await postJSON("/picker/outcome", { session_id: sessionID });
+}
+
+export function postSkipBeacon(sessionID: string): void {
+  if (typeof navigator === "undefined" || !navigator.sendBeacon) {
+    return;
+  }
+  const blob = new Blob([JSON.stringify({ session_id: sessionID })], { type: "application/json" });
+  navigator.sendBeacon(`${API_BASE}/picker/outcome`, blob);
 }

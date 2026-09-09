@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { getContext } from "../api";
+import { getSettings } from "../../settings/api";
 import { getProviders, type ProviderProbe } from "../../../types/workItem";
 
 export interface PickerLoad {
   providers: ProviderProbe[];
   prompt: string;
+  requireWorkItem: boolean;
 }
 
 export function usePickerLoad(sessionID: string | null): {
@@ -16,10 +18,10 @@ export function usePickerLoad(sessionID: string | null): {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([getProviders(), getContext(sessionID)])
-      .then(([providers, prompt]) => {
+    Promise.all([getProviders(), getContext(sessionID), getSettings()])
+      .then(([providers, prompt, settings]) => {
         if (!cancelled) {
-          setLoad({ providers, prompt });
+          setLoad({ providers, prompt, requireWorkItem: settings.require_work_item });
         }
       })
       .catch((reason: unknown) => {

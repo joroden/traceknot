@@ -33,6 +33,10 @@ func (store *Store) RecordSkip(ctx context.Context, sessionID string, nowUnixMs 
 	return claim.RecordSkip(ctx, store.db, sessionID, nowUnixMs)
 }
 
+func (store *Store) ResetPendingClaim(ctx context.Context, sessionID string, nowUnixMs int64) error {
+	return claim.ResetPending(ctx, store.db, sessionID, nowUnixMs)
+}
+
 func (store *Store) UpsertRecentWorkItem(ctx context.Context, item RecentWorkItem) error {
 	return claim.UpsertRecent(ctx, store.db, item)
 }

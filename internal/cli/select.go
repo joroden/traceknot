@@ -62,6 +62,17 @@ func RunSelect(args []string) int {
 	}
 }
 
+func runSelectFlow(ctx context.Context, server string, sessionID string) (*selectOutcome, error) {
+	query := url.Values{}
+	query.Set("session", sessionID)
+	pickerURL := strings.TrimRight(server, "/") + "/select?" + query.Encode()
+
+	if err := openBrowser(pickerURL); err != nil {
+		return nil, fmt.Errorf("cannot open browser: %w", err)
+	}
+	return waitForOutcome(ctx, server, sessionID)
+}
+
 func postPrompt(ctx context.Context, server string, sessionID string, prompt string) error {
 	body, err := json.Marshal(map[string]string{
 		"session_id": sessionID,

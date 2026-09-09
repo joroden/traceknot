@@ -14,6 +14,7 @@ import { useWorkItemSearch } from "../../hooks/useWorkItemSearch";
 import { useClaim } from "./hooks/useClaim";
 import { usePickerLoad } from "./hooks/usePickerLoad";
 import { usePickerKeyboard } from "./hooks/usePickerKeyboard";
+import { usePageHideSkip } from "./hooks/usePageHideSkip";
 import { useSkip } from "./hooks/useSkip";
 import { OutcomeOverlay, type Outcome } from "./components/OutcomeOverlay";
 import { PromptBanner } from "./components/PromptBanner";
@@ -34,8 +35,11 @@ export function PickerPage({ sessionID }: PickerPageProps) {
   const [claimError, setClaimError] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<Outcome>(null);
 
+  usePageHideSkip(sessionID, outcome !== null);
+
   const providers: ProviderProbe[] = load?.providers ?? [];
   const prompt = load?.prompt ?? "";
+  const requireWorkItem = load?.requireWorkItem ?? false;
 
   const providerProbe = useMemo(
     () =>
@@ -79,10 +83,10 @@ export function PickerPage({ sessionID }: PickerPageProps) {
   const handleEscape = useCallback(() => {
     if (query) {
       setQuery("");
-    } else {
+    } else if (!requireWorkItem) {
       skip();
     }
-  }, [query, skip]);
+  }, [query, requireWorkItem, skip]);
 
   const handleConfirm = useCallback(
     (index: number) => setConfirming(rows[index]),
@@ -139,7 +143,9 @@ export function PickerPage({ sessionID }: PickerPageProps) {
 
   const emptyTitle =
     activeTab === RECENT_TAB
-      ? "No recent items yet — pick a platform tab to browse, or skip."
+      ? requireWorkItem
+        ? "No recent items yet — pick a platform tab to browse."
+        : "No recent items yet — pick a platform tab to browse, or skip."
       : query.trim()
         ? `No matches for "${query.trim()}" in ${activeTab}`
         : `No items found in ${activeTab}.`;
@@ -157,20 +163,24 @@ export function PickerPage({ sessionID }: PickerPageProps) {
           <div>
             <h1 className="text-lg font-bold">Attach Context</h1>
             <p className="mt-0.5 text-sm text-zinc-400 light:text-zinc-500">
-              Match this session to a work item, or skip
+              {requireWorkItem
+                ? "Match this session to a work item"
+                : "Match this session to a work item, or skip"}
             </p>
           </div>
         </div>
         <div className="flex flex-shrink-0 items-center gap-2">
           <ThemeToggle />
-          <button
-            type="button"
-            className="inline-flex cursor-pointer items-center gap-[7px] rounded-lg border border-zinc-700 bg-zinc-800 px-3.5 py-2 text-sm font-bold text-zinc-100 transition-colors hover:border-amber-500 light:border-zinc-300 light:bg-zinc-100 light:text-zinc-900 light:hover:border-amber-600"
-            onClick={skip}
-          >
-            <Forward size={13} />
-            Skip Context
-          </button>
+          {requireWorkItem ? null : (
+            <button
+              type="button"
+              className="inline-flex cursor-pointer items-center gap-[7px] rounded-lg border border-zinc-700 bg-zinc-800 px-3.5 py-2 text-sm font-bold text-zinc-100 transition-colors hover:border-amber-500 light:border-zinc-300 light:bg-zinc-100 light:text-zinc-900 light:hover:border-amber-600"
+              onClick={skip}
+            >
+              <Forward size={13} />
+              Skip Context
+            </button>
+          )}
         </div>
       </header>
 
