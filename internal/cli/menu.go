@@ -9,6 +9,7 @@ import (
 
 	"github.com/charmbracelet/huh"
 
+	"traceknot/internal/config"
 	"traceknot/internal/install/agentenv"
 	"traceknot/internal/install/autostart"
 )
@@ -72,10 +73,13 @@ func RunMenu() int {
 		selected = allHookBinaries(choices)
 	}
 
+	requireWorkItemWas := config.Load().RequireWorkItem
+	requireWorkItemOn := requireWorkItemWas
+
 	skills := skillChoices()
 	selectedSkillBinaries := selectedSkills(skills)
 
-	form := buildMenuForm(daemonStatusLine(ctx), autostartLabel, hookOptions(choices), &serverOn, &autostartOn, &selected, skillOptions(skills), &selectedSkillBinaries)
+	form := buildMenuForm(daemonStatusLine(ctx), autostartLabel, hookOptions(choices), &serverOn, &autostartOn, &selected, &requireWorkItemOn, skillOptions(skills), &selectedSkillBinaries)
 	if err := form.Run(); err != nil {
 		return 1
 	}
@@ -84,13 +88,14 @@ func RunMenu() int {
 	applyAutostartToggle(ctx, autostartWasOn, autostartOn)
 	disableAutostartIfRequested(ctx)
 	applyHookSelection(ctx, choices, selected, exe)
+	applyRequireWorkItemToggle(requireWorkItemWas, requireWorkItemOn)
 	applySkillSelection(skills, selectedSkillBinaries)
 	return 0
 }
 
 func buildMenuForm(
 	status string, autostartLabel string, options []huh.Option[string], serverOn *bool, autostartOn *bool, selected *[]string,
-	skillOptions []huh.Option[string], selectedSkills *[]string,
+	requireWorkItemOn *bool, skillOptions []huh.Option[string], selectedSkills *[]string,
 ) *huh.Form {
 	return huh.NewForm(
 		huh.NewGroup(
@@ -105,6 +110,10 @@ func buildMenuForm(
 				Options(options...).
 				Value(selected),
 		).Title("Hooks"),
+		huh.NewGroup(
+			huh.NewNote().Description("When required, a session started without a work item is cancelled."),
+			huh.NewConfirm().Title("Work item assignment").Affirmative("Required").Negative("Optional").Value(requireWorkItemOn),
+		).Title("Work items"),
 		huh.NewGroup(
 			huh.NewMultiSelect[string]().
 				Title("Session analysis skill").
@@ -197,6 +206,21 @@ func applyAutostartToggle(ctx context.Context, was bool, want bool) {
 		fmt.Fprintln(os.Stderr, "traceknot: autostart:", err)
 	} else {
 		fmt.Println("autostart: disabled")
+	}
+}
+
+func applyRequireWorkItemToggle(was bool, want bool) {
+	if was == want {
+		return
+	}
+	if err := config.Save(config.Config{RequireWorkItem: want}); err != nil {
+		fmt.Fprintln(os.Stderr, "traceknot: work item requirement:", err)
+		return
+	}
+	if want {
+		fmt.Println("work item requirement: required")
+	} else {
+		fmt.Println("work item requirement: optional")
 	}
 }
 

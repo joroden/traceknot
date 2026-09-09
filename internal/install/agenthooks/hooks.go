@@ -5,14 +5,17 @@ import (
 )
 
 type Provider struct {
-	Binary string
-	path   func() (string, error)
+	Binary    string
+	path      func() (string, error)
+	install   func(path string, exe string) error
+	remove    func(path string, exe string) error
+	installed func(path string, exe string) bool
 }
 
 var Providers = []Provider{
-	{Binary: "claude", path: claudeSettingsPath},
-	{Binary: "codex", path: codexHooksPath},
-	{Binary: "copilot", path: copilotHooksPath},
+	{Binary: "claude", path: claudeSettingsPath, install: jsonHookInstall("claude"), remove: jsonHookRemove, installed: jsonHookInstalled},
+	{Binary: "codex", path: codexHooksPath, install: jsonHookInstall("codex"), remove: jsonHookRemove, installed: jsonHookInstalled},
+	{Binary: "copilot", path: copilotExtensionPath, install: extensionInstall, remove: extensionRemove, installed: extensionInstalled},
 }
 
 func (p Provider) ConfigPath() (string, error) {
@@ -24,11 +27,7 @@ func (p Provider) Install(exe string) error {
 	if err != nil {
 		return err
 	}
-	template, err := HookTemplate(p.Binary)
-	if err != nil {
-		return err
-	}
-	return applyTemplate(path, template, exe)
+	return p.install(path, exe)
 }
 
 func (p Provider) Remove(exe string) error {
@@ -39,6 +38,28 @@ func (p Provider) Remove(exe string) error {
 	if !fileExists(path) {
 		return nil
 	}
+	return p.remove(path, exe)
+}
+
+func (p Provider) Installed(exe string) bool {
+	path, err := p.ConfigPath()
+	if err != nil {
+		return false
+	}
+	return p.installed(path, exe)
+}
+
+func jsonHookInstall(vendor string) func(path string, exe string) error {
+	return func(path string, exe string) error {
+		template, err := HookTemplate(vendor)
+		if err != nil {
+			return err
+		}
+		return applyTemplate(path, template, exe)
+	}
+}
+
+func jsonHookRemove(path string, exe string) error {
 	document, err := readJSONMap(path)
 	if err != nil {
 		return err
@@ -62,11 +83,7 @@ func (p Provider) Remove(exe string) error {
 	return writeJSON(path, document)
 }
 
-func (p Provider) Installed(exe string) bool {
-	path, err := p.ConfigPath()
-	if err != nil {
-		return false
-	}
+func jsonHookInstalled(path string, exe string) bool {
 	document, err := readJSONMap(path)
 	if err != nil {
 		return false

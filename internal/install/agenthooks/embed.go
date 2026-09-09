@@ -8,3 +8,7 @@ var assets embed.FS
 func HookTemplate(vendor string) ([]byte, error) {
 	return assets.ReadFile("assets/" + vendor + "/hooks.json")
 }
+
+func ExtensionTemplate() ([]byte, error) {
+	return assets.ReadFile("assets/copilot-extension/extension.mjs")
+}

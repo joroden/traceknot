@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"traceknot/internal/config"
 	"traceknot/internal/httputil"
 	"traceknot/internal/providers"
 	"traceknot/internal/ptr"
@@ -115,12 +116,19 @@ func (picker *Picker) handleOfferPicker(writer http.ResponseWriter, request *htt
 		httputil.WriteError(writer, http.StatusInternalServerError, "offer_failed", err.Error())
 		return
 	}
-	status, created, err := picker.store.OfferPicker(request.Context(), sessionID, time.Now().UnixMilli())
+	now := time.Now().UnixMilli()
+	status, created, err := picker.store.OfferPicker(request.Context(), sessionID, now)
 	if err != nil {
 		httputil.WriteError(writer, http.StatusInternalServerError, "offer_failed", err.Error())
 		return
 	}
 	if created {
+		status = "offered"
+	} else if status != store.ClaimStatusClaimed && config.Load().RequireWorkItem {
+		if err := picker.store.ResetPendingClaim(request.Context(), sessionID, now); err != nil {
+			httputil.WriteError(writer, http.StatusInternalServerError, "offer_failed", err.Error())
+			return
+		}
 		status = "offered"
 	}
 	httputil.WriteJSON(writer, http.StatusOK, map[string]any{"status": status})

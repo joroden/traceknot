@@ -45,9 +45,9 @@ func applyChoices(choices []providerChoice, exe string) {
 		}
 		switch choice.provider.Binary {
 		case "codex":
-			fmt.Println("Next: run /hooks in the codex CLI and trust the SessionStart hook")
+			fmt.Println("Next: run /hooks in the codex CLI and trust the UserPromptSubmit hook")
 		case "copilot":
-			fmt.Println("Next: restart the copilot CLI so hooks load")
+			fmt.Println("Next: restart the copilot CLI so the extension loads")
 		}
 	}
 }

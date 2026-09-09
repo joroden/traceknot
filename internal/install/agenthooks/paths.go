@@ -26,14 +26,30 @@ func codexHooksPath() (string, error) {
 	return filepath.Join(codexHome, "hooks.json"), nil
 }
 
-func copilotHooksPath() (string, error) {
+func copilotHome() (string, error) {
 	copilotHome := os.Getenv("COPILOT_HOME")
-	if copilotHome == "" {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return "", fmt.Errorf("resolve home: %w", err)
-		}
-		copilotHome = filepath.Join(home, ".copilot")
+	if copilotHome != "" {
+		return copilotHome, nil
 	}
-	return filepath.Join(copilotHome, "hooks", "traceknot.json"), nil
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("resolve home: %w", err)
+	}
+	return filepath.Join(home, ".copilot"), nil
+}
+
+func copilotExtensionPath() (string, error) {
+	home, err := copilotHome()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(home, "extensions", "traceknot", "extension.mjs"), nil
+}
+
+func copilotSettingsPath() (string, error) {
+	home, err := copilotHome()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(home, "settings.json"), nil
 }

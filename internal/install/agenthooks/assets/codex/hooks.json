@@ -1,12 +1,11 @@
 {
   "hooks": {
-    "SessionStart": [
+    "UserPromptSubmit": [
       {
-        "matcher": "startup",
         "hooks": [
           {
             "type": "command",
-            "command": "{{TRACEKNOT_BIN}} claim",
+            "command": "{{TRACEKNOT_BIN}} claim --agent codex",
             "timeout": 240
           }
         ]

@@ -69,6 +69,18 @@ func Offer(ctx context.Context, db Querier, sessionID string, nowUnixMs int64) (
 	return outcome.Status, false, nil
 }
 
+func ResetPending(ctx context.Context, db Querier, sessionID string, nowUnixMs int64) error {
+	if _, err := db.ExecContext(ctx, `
+		UPDATE claims SET status = 'pending', updated_at_unix_ms = ?
+		WHERE session_id = ?`,
+		nowUnixMs,
+		sessionID,
+	); err != nil {
+		return fmt.Errorf("reset pending: %w", err)
+	}
+	return nil
+}
+
 func RecordSkip(ctx context.Context, db Querier, sessionID string, nowUnixMs int64) error {
 	if _, err := db.ExecContext(ctx, `
 		UPDATE claims SET status = 'skipped', updated_at_unix_ms = ?
