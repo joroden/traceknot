@@ -1,15 +1,48 @@
 name: release
 
 on:
-  push:
-    tags:
-      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      create_github_release:
+        description: "Create a GitHub release after publishing"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
 
 jobs:
+  version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Compute next version
+        id: version
+        run: |
+          tag=$(scripts/release/next-version.sh)
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Create and push tag
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          GIT_COMMITTER_NAME: github-actions[bot]
+          GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
+        run: scripts/release/create-tag.sh "$TAG"
+
   build:
+    needs: version
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.version.outputs.tag }}
 
       - uses: actions/setup-go@v7
         with:
@@ -43,7 +76,7 @@ jobs:
           retention-days: 7
 
   publish:
-    needs: build
+    needs: [version, build]
     runs-on: ubuntu-latest
     environment: release-publish
     permissions:
@@ -76,7 +109,7 @@ jobs:
       - name: Upload versioned binaries to R2
         run: |
           set -euo pipefail
-          rclone copy dist/downloads/ "r2:$R2_BUCKET/releases/${{ github.ref_name }}/downloads/" \
+          rclone copy dist/downloads/ "r2:$R2_BUCKET/releases/${{ needs.version.outputs.tag }}/downloads/" \
             --no-traverse
 
       - name: Upload install scripts to R2 (stable root path)
@@ -89,4 +122,21 @@ jobs:
       - name: Point latest.txt at this release
         run: |
           set -euo pipefail
-          echo -n "${{ github.ref_name }}" | rclone rcat "r2:$R2_BUCKET/latest.txt"
+          echo -n "${{ needs.version.outputs.tag }}" | rclone rcat "r2:$R2_BUCKET/latest.txt"
+
+  github-release:
+    needs: [version, publish]
+    if: ${{ inputs.create_github_release }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.version.outputs.tag }}
+
+      - name: Create GitHub release
+        env:
+          TAG: ${{ needs.version.outputs.tag }}
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/release/create-github-release.sh "$TAG"
