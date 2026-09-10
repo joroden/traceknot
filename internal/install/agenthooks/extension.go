@@ -115,5 +115,9 @@ func extensionInstalled(path string, exe string) bool {
 	if err != nil {
 		return false
 	}
-	return strings.Contains(string(content), exe)
+	escapedExe, err := json.Marshal(exe)
+	if err != nil {
+		return false
+	}
+	return strings.Contains(string(content), string(escapedExe))
 }

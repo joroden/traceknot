@@ -3,13 +3,33 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"syscall"
+	"time"
 )
 
 func startDaemonBackground(args []string) error {
+	ctx := context.Background()
+	var lastErr error
+	for range 3 {
+		freePort(ctx, portFromURL(defaultServerURL))
+		time.Sleep(300 * time.Millisecond)
+		if err := spawnDaemonProcess(args); err != nil {
+			lastErr = err
+			continue
+		}
+		if waitHealthy(ctx, defaultServerURL) {
+			return nil
+		}
+		lastErr = fmt.Errorf("daemon did not become healthy")
+	}
+	return lastErr
+}
+
+func spawnDaemonProcess(args []string) error {
 	if err := os.MkdirAll(daemonLogDir(), 0o755); err != nil {
 		return fmt.Errorf("create log dir: %w", err)
 	}
@@ -24,8 +44,15 @@ func startDaemonBackground(args []string) error {
 	if err := command.Start(); err != nil {
 		return fmt.Errorf("start daemon: %w", err)
 	}
-	if err := os.WriteFile(daemonPidPath(), []byte(fmt.Sprint(command.Process.Pid)), 0o644); err != nil {
-		return fmt.Errorf("write pid file: %w", err)
-	}
 	return nil
+}
+
+func WriteDaemonPID() func() {
+	if err := os.MkdirAll(daemonLogDir(), 0o755); err != nil {
+		return func() {}
+	}
+	if err := os.WriteFile(daemonPidPath(), fmt.Append(nil, os.Getpid()), 0o644); err != nil {
+		return func() {}
+	}
+	return func() { _ = os.Remove(daemonPidPath()) }
 }

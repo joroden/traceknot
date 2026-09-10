@@ -59,7 +59,15 @@ func RunClaim(args []string) int {
 		return 0
 	}
 	logClaim("claim: session " + sessionID + " blocked (" + *agent + "), required mode on")
-	fmt.Fprintln(os.Stderr, "No work item was assigned to this session and assignment is required. The run was not allowed to continue.")
+	reason := "No work item was assigned to this session and assignment is required. The run was not allowed to continue."
+	if *agent == "codex" {
+		decision, err := json.Marshal(map[string]string{"decision": "block", "reason": reason})
+		if err == nil {
+			fmt.Println(string(decision))
+		}
+		return 0
+	}
+	fmt.Fprintln(os.Stderr, reason)
 	return 2
 }
 

@@ -9,6 +9,10 @@ import (
 	"syscall"
 )
 
+func WriteDaemonPID() func() {
+	return func() {}
+}
+
 func startDaemonBackground(args []string) error {
 	if err := os.MkdirAll(daemonLogDir(), 0o755); err != nil {
 		return fmt.Errorf("create log dir: %w", err)
