@@ -92,7 +92,8 @@ func isTraceknotCommand(command string, exe string) bool {
 	if len(fields) == 0 {
 		return false
 	}
-	return fields[0] == exe || filepath.Base(fields[0]) == "traceknot"
+	binary := strings.Trim(fields[0], `"`)
+	return binary == exe || filepath.Base(binary) == "traceknot"
 }
 
 func readJSONMap(path string) (map[string]any, error) {
