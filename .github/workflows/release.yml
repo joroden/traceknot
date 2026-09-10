@@ -2,47 +2,38 @@ name: release
 
 on:
   workflow_dispatch:
-    inputs:
-      create_github_release:
-        description: "Create a GitHub release after publishing"
-        type: boolean
-        default: true
 
 permissions:
   contents: read
 
 jobs:
-  version:
+  release:
     runs-on: ubuntu-latest
+    environment: release-publish
     permissions:
       contents: write
-    outputs:
-      tag: ${{ steps.version.outputs.tag }}
+      id-token: write
+      attestations: write
+    env:
+      RCLONE_CONFIG_R2_TYPE: s3
+      RCLONE_CONFIG_R2_PROVIDER: Cloudflare
+      RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      RCLONE_CONFIG_R2_REGION: auto
+      RCLONE_CONFIG_R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+      RCLONE_CONFIG_R2_NO_CHECK_BUCKET: "true"
+      R2_BUCKET: ${{ secrets.R2_BUCKET_NAME }}
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          token: ${{ secrets.RELEASE_TOKEN }}
 
       - name: Compute next version
         id: version
         run: |
           tag=$(scripts/release/next-version.sh)
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
-
-      - name: Create and push tag
-        env:
-          TAG: ${{ steps.version.outputs.tag }}
-          GIT_COMMITTER_NAME: github-actions[bot]
-          GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
-        run: scripts/release/create-tag.sh "$TAG"
-
-  build:
-    needs: version
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ needs.version.outputs.tag }}
 
       - uses: actions/setup-go@v7
         with:
@@ -69,35 +60,6 @@ jobs:
       - name: make dist
         run: make dist
 
-      - uses: actions/upload-artifact@v7
-        with:
-          name: dist
-          path: dist/
-          retention-days: 7
-
-  publish:
-    needs: [version, build]
-    runs-on: ubuntu-latest
-    environment: release-publish
-    permissions:
-      id-token: write
-      attestations: write
-      contents: read
-    env:
-      RCLONE_CONFIG_R2_TYPE: s3
-      RCLONE_CONFIG_R2_PROVIDER: Cloudflare
-      RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-      RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-      RCLONE_CONFIG_R2_REGION: auto
-      RCLONE_CONFIG_R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
-      RCLONE_CONFIG_R2_NO_CHECK_BUCKET: "true"
-      R2_BUCKET: ${{ secrets.R2_BUCKET_NAME }}
-    steps:
-      - uses: actions/download-artifact@v8
-        with:
-          name: dist
-          path: dist
-
       - name: Install rclone
         run: curl https://rclone.org/install.sh | sudo bash
 
@@ -107,9 +69,11 @@ jobs:
           subject-path: "dist/downloads/traceknot-*"
 
       - name: Upload versioned binaries to R2
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
         run: |
           set -euo pipefail
-          rclone copy dist/downloads/ "r2:$R2_BUCKET/releases/${{ needs.version.outputs.tag }}/downloads/" \
+          rclone copy dist/downloads/ "r2:$R2_BUCKET/releases/$TAG/downloads/" \
             --no-traverse
 
       - name: Upload install scripts to R2 (stable root path)
@@ -120,23 +84,21 @@ jobs:
             --include "install.sh" --include "install.ps1"
 
       - name: Point latest.txt at this release
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
         run: |
           set -euo pipefail
-          echo -n "${{ needs.version.outputs.tag }}" | rclone rcat "r2:$R2_BUCKET/latest.txt"
+          echo -n "$TAG" | rclone rcat "r2:$R2_BUCKET/latest.txt"
 
-  github-release:
-    needs: [version, publish]
-    if: ${{ inputs.create_github_release }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ needs.version.outputs.tag }}
+      - name: Create and push tag
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          GIT_COMMITTER_NAME: github-actions[bot]
+          GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
+        run: scripts/release/create-tag.sh "$TAG"
 
       - name: Create GitHub release
         env:
-          TAG: ${{ needs.version.outputs.tag }}
+          TAG: ${{ steps.version.outputs.tag }}
           GH_TOKEN: ${{ github.token }}
         run: scripts/release/create-github-release.sh "$TAG"
