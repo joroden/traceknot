@@ -53,3 +53,11 @@ func copilotSettingsPath() (string, error) {
 	}
 	return filepath.Join(home, "settings.json"), nil
 }
+
+func copilotPermissionsPath() (string, error) {
+	home, err := copilotHome()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(home, "permissions-config.json"), nil
+}
