@@ -90,15 +90,18 @@ folder yourself if you want the data gone too.
 
 ## Configurations
 
-Bare `traceknot`, run from a terminal, opens the same menu install uses
-(Tab/Shift+Tab to switch tabs):
+Bare `traceknot` opens Settings in your browser — the same page setup uses,
+also reachable from the dashboard's sidebar at any time:
 
-- **Server** — current status, an On/Off toggle for the daemon, and an On/Off
-  toggle for automatic start up on login.
-- **Hooks** — Choose which agents do you want to configure hooks for.
+- **Startup** — start the daemon automatically on login.
+- **Agent hooks** — choose which agents traceknot collects telemetry from.
+- **Work items** — require every session to be claimed against a work item,
+  or leave it optional.
+- **Session analysis skill** — let an agent inspect its own session cost and
+  telemetry when you ask it to.
 
 ```sh
-traceknot            # the menu described above
+traceknot            # open Settings in your browser
 traceknot uninstall  # remove traceknot (keeps ~/.traceknot data — see above)
 traceknot help       # usage
 ```

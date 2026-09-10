@@ -9,6 +9,7 @@ export default defineConfig({
       input: {
         index: new URL("./index.html", import.meta.url).pathname,
         select: new URL("./select.html", import.meta.url).pathname,
+        setup: new URL("./setup.html", import.meta.url).pathname,
       },
     },
   },

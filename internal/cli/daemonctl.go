@@ -22,24 +22,6 @@ func daemonRunning(ctx context.Context) bool {
 	return daemonHealthy(ctx, defaultServerURL)
 }
 
-func daemonStatusLine(ctx context.Context) string {
-	if !daemonHealthy(ctx, defaultServerURL) {
-		return "Server: not running"
-	}
-	mode := "background"
-	switch {
-	case autostart.SystemdUnitExists():
-		mode = "systemd user service"
-	case autostart.LaunchAgentExists():
-		mode = "LaunchAgent"
-	}
-	line := "Server: running at " + defaultServerURL + " (" + mode
-	if pid := readPidFile(); pid != "" {
-		line += ", pid " + pid
-	}
-	return line + ")"
-}
-
 func startDaemonNow(ctx context.Context) error {
 	freePort(ctx, portFromURL(defaultServerURL))
 	switch {

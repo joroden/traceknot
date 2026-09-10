@@ -8,6 +8,18 @@ import (
 	"strings"
 )
 
+func canOpenBrowser() bool {
+	switch runtime.GOOS {
+	case "darwin", "windows":
+		return true
+	default:
+		if isWSL() {
+			return true
+		}
+		return os.Getenv("DISPLAY") != "" || os.Getenv("WAYLAND_DISPLAY") != ""
+	}
+}
+
 func openBrowser(target string) error {
 	if browser := findChromium(); browser != "" {
 		command := exec.Command(browser, "--app="+target)
