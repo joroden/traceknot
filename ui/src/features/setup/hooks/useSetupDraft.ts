@@ -13,7 +13,14 @@ export interface UseSetupDraft {
   finished: boolean;
 }
 
+function isUnconfigured(state: SettingsState): boolean {
+  return !state.autostart_on && state.hooks.every((hook) => !hook.enabled);
+}
+
 function recommendedDefaults(state: SettingsState): SettingsState {
+  if (!isUnconfigured(state)) {
+    return state;
+  }
   return {
     ...state,
     autostart_on: true,
