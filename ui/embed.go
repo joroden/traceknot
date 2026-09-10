@@ -44,6 +44,9 @@ func Handler() http.Handler {
 		if path == "select" {
 			path = "select.html"
 		}
+		if path == "setup" {
+			path = "setup.html"
+		}
 		if _, err := fs.Stat(sub, path); err != nil {
 			path = "index.html"
 		}

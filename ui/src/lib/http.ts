@@ -24,6 +24,14 @@ export function postJSON(path: string, body: unknown): Promise<unknown> {
   });
 }
 
+export function patchJSON<T>(path: string, body: unknown): Promise<T> {
+  return request<T>(path, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
 export function getJSON<T>(
   path: string,
   params?: Record<string, string | number | undefined>,

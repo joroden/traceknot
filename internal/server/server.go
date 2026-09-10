@@ -156,6 +156,7 @@ func buildMux(storeHandle *store.Store, receiver *ingest.Receiver, rebuildTracke
 	mux.Handle("/api/v1/sessions", sessionsList.Handler())
 	mux.Handle("/api/v1/work-items", workItems.Handler())
 	mux.Handle("/api/v1/settings", settings.Handler())
+	mux.Handle("/api/v1/settings/", settings.Handler())
 	mux.Handle("/api/v1/sessions/", sessionDetail.Handler())
 	mux.Handle("/api/v1/nodes/", sessionDetail.Handler())
 	mux.Handle("/", ui.Handler())

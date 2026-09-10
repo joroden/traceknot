@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Inbox, Layers, LayoutDashboard, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Inbox, Layers, LayoutDashboard, PanelLeftClose, PanelLeftOpen, Settings } from "lucide-react";
 import { NavLink } from "react-router";
 import { LogoMark } from "../components/Logo";
 import { ThemeToggle } from "../components/ThemeToggle";
@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/work-items", label: "Work Items", icon: Layers },
   { to: "/unclaimed", label: "Unclaimed", icon: Inbox },
+  { to: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function Sidebar() {

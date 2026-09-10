@@ -17,6 +17,9 @@ const SessionDetail = lazy(() =>
 const Unclaimed = lazy(() =>
   import("../features/unclaimed").then((mod) => ({ default: mod.UnclaimedPage })),
 );
+const Settings = lazy(() =>
+  import("../features/settings").then((mod) => ({ default: mod.SettingsPage })),
+);
 
 function lazyWrap(Component: LazyExoticComponent<ComponentType>) {
   return function LazyRoute() {
@@ -38,6 +41,7 @@ export const router = createBrowserRouter([
       { path: "work-items", Component: lazyWrap(WorkItems) },
       { path: "sessions/:id", Component: lazyWrap(SessionDetail) },
       { path: "unclaimed", Component: lazyWrap(Unclaimed) },
+      { path: "settings", Component: lazyWrap(Settings) },
     ],
   },
 ]);
@@ -52,6 +56,7 @@ export const pageTitles: PageTitle[] = [
   { path: "/sessions/:id", title: "Session" },
   { path: "/work-items", title: "Work items" },
   { path: "/unclaimed", title: "Unclaimed sessions" },
+  { path: "/settings", title: "Settings" },
 ];
 
 export function titleForPathname(pathname: string): string {

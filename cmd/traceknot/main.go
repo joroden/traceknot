@@ -33,7 +33,7 @@ func main() {
 	}
 
 	if cli.IsInteractive() {
-		os.Exit(cli.RunMenu())
+		os.Exit(cli.RunSettings())
 	}
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
