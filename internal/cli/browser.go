@@ -186,7 +186,7 @@ func openWithDefaultHandler(target string) error {
 	case "darwin":
 		return launchBrowser("open", target)
 	case "windows":
-		return launchBrowser("cmd", "/c", "start", "", `"`+target+`"`)
+		return launchBrowser("rundll32", "url.dll,FileProtocolHandler", target)
 	default:
 		if isWSL() {
 			if err := launchBrowser("wslview", target); err == nil {

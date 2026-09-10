@@ -143,12 +143,6 @@ func (receiver *Receiver) Ingest(ctx context.Context, normalizer shared.Normaliz
 				"error", err)
 			continue
 		}
-		receiver.logger.Info("ingest session updated",
-			"session", result.Seed.SessionID,
-			"provider", result.Seed.Provider,
-			"chats", len(result.Content.Chats),
-			"tools", len(result.Content.ToolCalls),
-			"agents", len(result.Content.Agents))
 	}
 }
 

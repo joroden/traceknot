@@ -41,6 +41,7 @@ func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelInfo,
 	}))
+	defer cli.WriteDaemonPID()()
 	if err := server.Run(defaultDBPath(), "127.0.0.1:4318", logger); err != nil {
 		logger.Error("server failed", "error", err)
 		os.Exit(1)
