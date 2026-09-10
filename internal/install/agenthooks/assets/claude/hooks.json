@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "{{TRACEKNOT_BIN}} claim --agent claude",
+            "command": "\"{{TRACEKNOT_BIN}}\" claim --agent claude",
             "timeout": 240
           }
         ]
