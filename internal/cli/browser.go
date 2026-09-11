@@ -22,15 +22,30 @@ func canOpenBrowser() bool {
 
 func openBrowser(target string) error {
 	if browser := findChromium(); browser != "" {
-		command := exec.Command(browser, "--app="+target)
-		if workDir := chromiumWorkDir(); workDir != "" {
-			command.Dir = workDir
-		}
-		if err := command.Start(); err == nil {
+		if err := launchChromium(browser, target); err == nil {
 			return nil
 		}
 	}
 	return openWithDefaultHandler(target)
+}
+
+func launchChromium(browser string, target string) error {
+	if runtime.GOOS == "darwin" {
+		command := exec.Command("open", "-na", chromiumAppBundle(browser), "--args", "--app="+target)
+		return command.Start()
+	}
+	command := exec.Command(browser, "--app="+target)
+	if workDir := chromiumWorkDir(); workDir != "" {
+		command.Dir = workDir
+	}
+	return command.Start()
+}
+
+func chromiumAppBundle(executablePath string) string {
+	if idx := strings.Index(executablePath, ".app/"); idx != -1 {
+		return executablePath[:idx+len(".app")]
+	}
+	return executablePath
 }
 
 func findChromium() string {
