@@ -74,16 +74,16 @@ func seedCopilotExtensionPermission() error {
 }
 
 func copilotPermissionLocation() (string, error) {
-	cwd, err := os.Getwd()
+	home, err := os.UserHomeDir()
 	if err != nil {
-		return "", fmt.Errorf("resolve cwd: %w", err)
+		return "", fmt.Errorf("resolve home: %w", err)
 	}
-	if output, err := exec.Command("git", "-C", cwd, "rev-parse", "--show-toplevel").Output(); err == nil {
+	if output, err := exec.Command("git", "-C", home, "rev-parse", "--show-toplevel").Output(); err == nil {
 		if root := strings.TrimSpace(string(output)); root != "" {
 			return filepath.Clean(root), nil
 		}
 	}
-	return filepath.Clean(cwd), nil
+	return filepath.Clean(home), nil
 }
 
 func enableCopilotExperimental() error {
