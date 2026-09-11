@@ -24,6 +24,10 @@ func daemonRunning(ctx context.Context) bool {
 
 func startDaemonNow(ctx context.Context) error {
 	freePort(ctx, portFromURL(defaultServerURL))
+	exe, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("cannot resolve binary: %w", err)
+	}
 	switch {
 	case autostart.SystemdUnitExists():
 		runQuiet(ctx, "systemctl", "--user", "start", "traceknot.service")
@@ -33,6 +37,7 @@ func startDaemonNow(ctx context.Context) error {
 			return nil
 		}
 	case autostart.LaunchAgentExists():
+		_ = autostart.RepairLaunchAgent(exe)
 		plist := autostart.LaunchAgentPath()
 		runQuiet(ctx, "launchctl", "bootstrap", "gui/"+fmt.Sprint(os.Getuid()), plist)
 		if waitHealthy(ctx, defaultServerURL) {
@@ -40,10 +45,6 @@ func startDaemonNow(ctx context.Context) error {
 			waitReady(ctx, defaultServerURL)
 			return nil
 		}
-	}
-	exe, err := os.Executable()
-	if err != nil {
-		return fmt.Errorf("cannot resolve binary: %w", err)
 	}
 	if err := startDaemonBackground([]string{exe}); err != nil {
 		return err
