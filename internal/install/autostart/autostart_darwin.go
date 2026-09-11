@@ -3,11 +3,47 @@
 package autostart
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 )
+
+func Enabled(_ context.Context) bool {
+	return launchAgentExists()
+}
+
+func Enable(_ context.Context) error {
+	exe, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("resolve binary: %w", err)
+	}
+	return writeLaunchAgent(exe)
+}
+
+func Disable(_ context.Context) error {
+	if !launchAgentExists() {
+		return nil
+	}
+	if err := os.Remove(launchAgentPath()); err != nil {
+		return fmt.Errorf("remove plist: %w", err)
+	}
+	return nil
+}
+
+func SystemdUnitExists() bool { return false }
+
+func LaunchAgentExists() bool { return launchAgentExists() }
+
+func LaunchAgentPath() string { return launchAgentPath() }
+
+func RepairLaunchAgent(exe string) error {
+	if !launchAgentExists() {
+		return nil
+	}
+	return writeLaunchAgent(exe)
+}
 
 func launchAgentExists() bool {
 	_, err := os.Stat(launchAgentPath())
