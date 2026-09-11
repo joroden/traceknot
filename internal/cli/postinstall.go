@@ -24,6 +24,7 @@ func RunPostInstall() int {
 	if daemonRunning(ctx) {
 		stopDaemon(ctx, defaultServerURL)
 	}
+	fmt.Println("Starting traceknot daemon…")
 	if err := startDaemonNow(ctx); err != nil {
 		fmt.Fprintln(os.Stderr, "traceknot: start:", err)
 		return 1

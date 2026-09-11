@@ -30,7 +30,7 @@ func Enable(ctx context.Context) error {
 	case "linux":
 		return writeSystemdUnit(ctx, exe)
 	case "darwin":
-		return writeLaunchAgent(ctx, exe)
+		return writeLaunchAgent(exe)
 	case "windows":
 		return setRunKey(ctx, exe)
 	}
@@ -52,7 +52,6 @@ func Disable(ctx context.Context) error {
 		if !launchAgentExists() {
 			return nil
 		}
-		runQuiet(ctx, "launchctl", "bootout", "gui/"+fmt.Sprint(os.Getuid()), launchAgentPath())
 		if err := os.Remove(launchAgentPath()); err != nil {
 			return fmt.Errorf("remove plist: %w", err)
 		}
@@ -118,7 +117,7 @@ func writeSystemdUnit(ctx context.Context, exe string) error {
 	return nil
 }
 
-func writeLaunchAgent(ctx context.Context, exe string) error {
+func writeLaunchAgent(exe string) error {
 	path := launchAgentPath()
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return fmt.Errorf("mkdir plist dir: %w", err)
@@ -155,8 +154,6 @@ func writeLaunchAgent(ctx context.Context, exe string) error {
 	if err := os.WriteFile(path, []byte(plist), 0o644); err != nil {
 		return fmt.Errorf("write plist: %w", err)
 	}
-	runQuiet(ctx, "launchctl", "bootout", "gui/"+fmt.Sprint(os.Getuid()), path)
-	runQuiet(ctx, "launchctl", "bootstrap", "gui/"+fmt.Sprint(os.Getuid()), path)
 	return nil
 }
 
