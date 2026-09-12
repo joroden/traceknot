@@ -52,20 +52,26 @@ is available where noted below.
 
 Scope: `go list -deps ./cmd/traceknot/...`, i.e. what actually ends up in the
 binary — not every module listed in `go.mod` (a few, like `fsnotify`, are
-declared but not currently imported by any code path). Full text is in the
-module cache: `$(go env GOMODCACHE)/<module>@<version>/LICENSE`.
+declared but not currently imported by any code path). Checked for all three
+shipped `GOOS` targets (`windows`, `darwin`, `linux`), since some
+dependencies (e.g. `go-ole`, `yusufpapurcu/wmi`, `ebitengine/purego`) only
+compile in on specific platforms. Full text is in the module cache:
+`$(go env GOMODCACHE)/<module>@<version>/LICENSE`.
 
 **MIT** — `charmbracelet/{huh, bubbles, bubbletea, colorprofile, lipgloss,
 x/ansi, x/cellbuf, x/exp/strings, x/term}`, `aymanbagabas/go-osc52/v2`,
-`catppuccin/go`, `dustin/go-humanize`, `lucasb-eyer/go-colorful`,
+`catppuccin/go`, `dustin/go-humanize`, `go-ole/go-ole`, `lucasb-eyer/go-colorful`,
 `mattn/{go-isatty, go-runewidth}`, `mitchellh/hashstructure/v2`,
-`muesli/{ansi, cancelreader, termenv}`, `rivo/uniseg`, `xo/terminfo`
+`muesli/{ansi, cancelreader, termenv}`, `rivo/uniseg`, `xo/terminfo`,
+`yusufpapurcu/wmi`
 
 **BSD-3-Clause** — `atotto/clipboard`, `google/uuid`, `remyoudompheng/bigfft`,
-`golang.org/x/sync`, `golang.org/x/sys`, `google.golang.org/protobuf`,
+`shirou/gopsutil/v4`, `tklauser/go-sysconf`, `golang.org/x/sync`,
+`golang.org/x/sys`, `google.golang.org/protobuf`,
 `modernc.org/{libc, mathutil, memory, sqlite}`
 
-**Apache-2.0** — `go.opentelemetry.io/proto/otlp`
+**Apache-2.0** — `ebitengine/purego`, `go.opentelemetry.io/proto/otlp`,
+`tklauser/numcpus`
 
 ### UI (npm) packages
 

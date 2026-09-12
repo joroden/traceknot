@@ -1,13 +1,15 @@
+//go:build !windows
+
 package agentenv
 
 import (
-	"context"
-	"os/exec"
 	"runtime"
 	"strings"
+
+	"traceknot/internal/platform"
 )
 
-func applyUnixEnv(binDir string) error {
+func ApplyEnv(binDir string) error {
 	envBlock, err := loadSnippet("unix/env.sh")
 	if err != nil {
 		return err
@@ -25,7 +27,7 @@ func applyUnixEnv(binDir string) error {
 			return err
 		}
 	}
-	if IsWSL() {
+	if platform.Current.IsWSL() {
 		vscodeServerEnvSetup := vscodeServerEnvSetupPath()
 		if err := upsertBlock(vscodeServerEnvSetup, string(envBlock)); err != nil {
 			return err
@@ -35,12 +37,12 @@ func applyUnixEnv(binDir string) error {
 		}
 	}
 	if runtime.GOOS == "darwin" {
-		setLaunchctlEnv(envBlock)
+		platform.Current.SetLaunchctlEnv(pairMap(unixEnvPairs(envBlock)))
 	}
 	return nil
 }
 
-func removeUnixEnv() error {
+func RemoveEnv() error {
 	envBlock, err := loadSnippet("unix/env.sh")
 	if err != nil {
 		return err
@@ -59,7 +61,7 @@ func removeUnixEnv() error {
 			return err
 		}
 	}
-	if IsWSL() {
+	if platform.Current.IsWSL() {
 		vscodeServerEnvSetup := vscodeServerEnvSetupPath()
 		if err := removeBlock(vscodeServerEnvSetup, envStart, envEnd); err != nil {
 			return err
@@ -69,21 +71,7 @@ func removeUnixEnv() error {
 		}
 	}
 	if runtime.GOOS == "darwin" {
-		unsetLaunchctlEnv(envBlock)
+		platform.Current.UnsetLaunchctlEnv(pairNames(unixEnvPairs(envBlock)))
 	}
 	return nil
-}
-
-func setLaunchctlEnv(block []byte) {
-	ctx := context.Background()
-	for _, pair := range unixEnvPairs(block) {
-		_ = exec.CommandContext(ctx, "launchctl", "setenv", pair.name, pair.value).Run()
-	}
-}
-
-func unsetLaunchctlEnv(block []byte) {
-	ctx := context.Background()
-	for _, pair := range unixEnvPairs(block) {
-		_ = exec.CommandContext(ctx, "launchctl", "unsetenv", pair.name).Run()
-	}
 }

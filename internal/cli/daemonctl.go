@@ -7,13 +7,12 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
 
-	"traceknot/internal/install/autostart"
+	"traceknot/internal/platform"
 )
 
 const defaultServerURL = "http://127.0.0.1:4318"
@@ -23,25 +22,14 @@ func daemonRunning(ctx context.Context) bool {
 }
 
 func startDaemonNow(ctx context.Context) error {
-	freePort(ctx, portFromURL(defaultServerURL))
+	platform.Current.FreePort(ctx, portFromURL(defaultServerURL))
 	exe, err := os.Executable()
 	if err != nil {
 		return fmt.Errorf("cannot resolve binary: %w", err)
 	}
-	switch {
-	case autostart.SystemdUnitExists():
-		runQuiet(ctx, "systemctl", "--user", "start", "traceknot.service")
+	if managed := platform.Current.StartManagedDaemon(ctx); managed != "" {
 		if waitHealthy(ctx, defaultServerURL) {
-			fmt.Println("daemon started (systemd user service)")
-			waitReady(ctx, defaultServerURL)
-			return nil
-		}
-	case autostart.LaunchAgentExists():
-		_ = autostart.RepairLaunchAgent(exe)
-		plist := autostart.LaunchAgentPath()
-		runQuiet(ctx, "launchctl", "bootstrap", "gui/"+fmt.Sprint(os.Getuid()), plist)
-		if waitHealthy(ctx, defaultServerURL) {
-			fmt.Println("daemon started (LaunchAgent)")
+			fmt.Println("daemon started (" + managed + ")")
 			waitReady(ctx, defaultServerURL)
 			return nil
 		}
@@ -57,30 +45,71 @@ func startDaemonNow(ctx context.Context) error {
 	return fmt.Errorf("daemon failed to start; check %s", daemonLogPath())
 }
 
+func startDaemonBackground(args []string) error {
+	if err := os.MkdirAll(daemonLogDir(), 0o755); err != nil {
+		return fmt.Errorf("create log dir: %w", err)
+	}
+	logFile, err := os.OpenFile(daemonLogPath(), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		return fmt.Errorf("open daemon log: %w", err)
+	}
+
+	if runtime.GOOS != "windows" {
+		pid, err := platform.Current.SpawnDaemon(args, logFile)
+		if err != nil {
+			return fmt.Errorf("start daemon: %w", err)
+		}
+		return os.WriteFile(daemonPidPath(), []byte(fmt.Sprint(pid)), 0o644)
+	}
+
+	ctx := context.Background()
+	var lastErr error
+	for range 3 {
+		platform.Current.FreePort(ctx, portFromURL(defaultServerURL))
+		time.Sleep(300 * time.Millisecond)
+		if _, err := platform.Current.SpawnDaemon(args, logFile); err != nil {
+			lastErr = err
+			continue
+		}
+		if waitHealthy(ctx, defaultServerURL) {
+			return nil
+		}
+		lastErr = fmt.Errorf("daemon did not become healthy")
+	}
+	return lastErr
+}
+
+func WriteDaemonPID() func() {
+	if runtime.GOOS != "windows" {
+		return func() {}
+	}
+	if err := os.MkdirAll(daemonLogDir(), 0o755); err != nil {
+		return func() {}
+	}
+	if err := os.WriteFile(daemonPidPath(), fmt.Append(nil, os.Getpid()), 0o644); err != nil {
+		return func() {}
+	}
+	return func() { _ = os.Remove(daemonPidPath()) }
+}
+
 func stopDaemon(ctx context.Context, server string) string {
 	if !daemonHealthy(ctx, server) {
 		if pid := readPidFile(); pid != "" {
-			killProcess(ctx, pid)
+			platform.Current.KillProcess(ctx, pid)
 			_ = os.Remove(daemonPidPath())
 			return "stopped"
 		}
 		return "not_running"
 	}
-	switch {
-	case autostart.SystemdUnitExists():
-		runQuiet(ctx, "systemctl", "--user", "stop", "traceknot.service")
+	if platform.Current.StopManagedDaemon(ctx) {
 		return afterStopStatus(ctx, server)
-	case autostart.LaunchAgentExists():
-		runQuiet(ctx, "launchctl", "bootout", "gui/"+fmt.Sprint(os.Getuid()), autostart.LaunchAgentPath())
-		return afterStopStatus(ctx, server)
-	default:
-		if pid := readPidFile(); pid != "" {
-			killProcess(ctx, pid)
-			_ = os.Remove(daemonPidPath())
-			return "stopped"
-		}
-		return "manual"
 	}
+	if pid := readPidFile(); pid != "" {
+		platform.Current.KillProcess(ctx, pid)
+		_ = os.Remove(daemonPidPath())
+		return "stopped"
+	}
+	return "manual"
 }
 
 func afterStopStatus(ctx context.Context, server string) string {
@@ -88,21 +117,13 @@ func afterStopStatus(ctx context.Context, server string) string {
 		return "stopped"
 	}
 	if pid := readPidFile(); pid != "" {
-		killProcess(ctx, pid)
+		platform.Current.KillProcess(ctx, pid)
 		_ = os.Remove(daemonPidPath())
 		if !daemonHealthy(ctx, server) {
 			return "stopped"
 		}
 	}
 	return "manual"
-}
-
-func killProcess(ctx context.Context, pid string) {
-	if runtime.GOOS == "windows" {
-		runQuiet(ctx, "taskkill", "/PID", pid, "/F")
-		return
-	}
-	runQuiet(ctx, "kill", pid)
 }
 
 func daemonLogDir() string {
@@ -196,14 +217,4 @@ func portFromURL(server string) string {
 		return parsed.Port()
 	}
 	return "4318"
-}
-
-func freePort(ctx context.Context, port string) {
-	switch runtime.GOOS {
-	case "linux":
-		runQuiet(ctx, "fuser", "-k", port+"/tcp")
-	case "windows":
-		script := "Get-NetTCPConnection -LocalPort " + port + " -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"
-		_ = exec.CommandContext(ctx, "powershell", "-NoProfile", "-Command", script).Run()
-	}
 }

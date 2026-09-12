@@ -6,10 +6,13 @@ import (
 	"traceknot/internal/config"
 	"traceknot/internal/install/agenthooks"
 	"traceknot/internal/install/agentskills"
-	"traceknot/internal/install/autostart"
+	"traceknot/internal/platform"
 )
 
 func Current(ctx context.Context) (State, error) {
+	mu.RLock()
+	defer mu.RUnlock()
+
 	exe, err := resolveExe()
 	if err != nil {
 		return State{}, err
@@ -26,7 +29,7 @@ func Current(ctx context.Context) (State, error) {
 	}
 
 	return State{
-		AutostartOn:     autostart.Enabled(ctx),
+		AutostartOn:     platform.Current.AutostartEnabled(ctx),
 		RequireWorkItem: config.Load().RequireWorkItem,
 		Hooks:           hooks,
 		Skills:          skills,

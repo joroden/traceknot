@@ -1,27 +1,25 @@
 //go:build linux
 
-package autostart
+package linux
 
 import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
-func Enabled(_ context.Context) bool {
+func AutostartEnabled(_ context.Context) bool {
 	return systemdUnitExists()
 }
 
-func Enable(ctx context.Context) error {
-	exe, err := os.Executable()
-	if err != nil {
-		return fmt.Errorf("resolve binary: %w", err)
-	}
+func AutostartEnable(ctx context.Context, exe string) error {
 	return writeSystemdUnit(ctx, exe)
 }
 
-func Disable(ctx context.Context) error {
+func AutostartDisable(ctx context.Context) error {
 	if !systemdUnitExists() {
 		return nil
 	}
@@ -33,13 +31,21 @@ func Disable(ctx context.Context) error {
 	return nil
 }
 
-func SystemdUnitExists() bool { return systemdUnitExists() }
+func StartManaged(ctx context.Context) string {
+	if !systemdUnitExists() {
+		return ""
+	}
+	runQuiet(ctx, "systemctl", "--user", "start", "traceknot.service")
+	return "systemd user service"
+}
 
-func LaunchAgentExists() bool { return false }
-
-func LaunchAgentPath() string { return "" }
-
-func RepairLaunchAgent(_ string) error { return nil }
+func StopManaged(ctx context.Context) bool {
+	if !systemdUnitExists() {
+		return false
+	}
+	runQuiet(ctx, "systemctl", "--user", "stop", "traceknot.service")
+	return true
+}
 
 func systemdUnitExists() bool {
 	_, err := os.Stat(systemdUnitPath())
@@ -60,7 +66,7 @@ func writeSystemdUnit(ctx context.Context, exe string) error {
 		"After=network.target\n\n" +
 		"[Service]\n" +
 		"Type=simple\n" +
-		"ExecStart=" + exe + "\n" +
+		"ExecStart=" + strings.ReplaceAll(exe, "%", "%%") + "\n" +
 		"Restart=always\n" +
 		"RestartSec=2\n\n" +
 		"[Install]\n" +
@@ -71,4 +77,8 @@ func writeSystemdUnit(ctx context.Context, exe string) error {
 	runQuiet(ctx, "systemctl", "--user", "daemon-reload")
 	runQuiet(ctx, "systemctl", "--user", "enable", "traceknot.service")
 	return nil
+}
+
+func runQuiet(ctx context.Context, name string, args ...string) {
+	_ = exec.CommandContext(ctx, name, args...).Run()
 }
