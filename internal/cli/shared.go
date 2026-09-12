@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -53,8 +52,4 @@ func daemonHealthy(ctx context.Context, server string) bool {
 	}
 	defer response.Body.Close()
 	return response.StatusCode == http.StatusOK
-}
-
-func runQuiet(ctx context.Context, name string, args ...string) {
-	_ = exec.CommandContext(ctx, name, args...).Run()
 }

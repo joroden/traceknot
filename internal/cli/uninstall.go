@@ -5,13 +5,11 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"runtime"
 
 	"traceknot/internal/install/agentenv"
 	"traceknot/internal/install/agenthooks"
-	"traceknot/internal/install/autostart"
+	"traceknot/internal/platform"
 )
 
 func RunUninstall(args []string) int {
@@ -36,33 +34,13 @@ func RunUninstall(args []string) int {
 	if result := stopDaemon(ctx, defaultServerURL); result == "manual" {
 		fmt.Fprintln(os.Stderr, "daemon is running but was not started by traceknot; stop it manually")
 	}
-	if err := autostart.Disable(ctx); err != nil {
+	if err := platform.Current.AutostartDisable(ctx); err != nil {
 		fmt.Fprintln(os.Stderr, "uninstall: autostart:", err)
 	}
-	removeBinary(exe)
+	if err := platform.Current.RemoveBinary(exe); err != nil {
+		fmt.Println("  - binary: could not remove: " + exe)
+	}
 
 	fmt.Println("Removed traceknot, local database preserved at " + filepath.Join(mustHome(), ".traceknot"))
 	return 0
-}
-
-func removeBinary(exe string) {
-	if runtime.GOOS != "windows" {
-		if err := os.Remove(exe); err == nil {
-			return
-		}
-		fmt.Println("  - binary: could not remove: " + exe)
-		return
-	}
-	stale := exe + ".tk-old"
-	if err := os.Rename(exe, stale); err != nil {
-		fmt.Println("  - binary: could not remove: " + exe + " (delete it manually)")
-		return
-	}
-	batch := filepath.Join(os.TempDir(), "traceknot-uninstall.ps1")
-	script := "Start-Sleep -Milliseconds 500; Remove-Item -Force -LiteralPath '" + stale + "'; Remove-Item -Force -LiteralPath '" + batch + "'"
-	if err := os.WriteFile(batch, []byte(script), 0o644); err == nil {
-		command := exec.Command("powershell", "-NoProfile", "-WindowStyle", "Hidden",
-			"-ExecutionPolicy", "Bypass", "-File", batch)
-		_ = command.Start()
-	}
 }

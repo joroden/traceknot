@@ -2,23 +2,8 @@ package agentenv
 
 import (
 	"os"
-	"runtime"
 	"strings"
 )
-
-func ApplyEnv(binDir string) error {
-	if runtime.GOOS == "windows" {
-		return applyWindowsEnv(binDir)
-	}
-	return applyUnixEnv(binDir)
-}
-
-func RemoveEnv() error {
-	if runtime.GOOS == "windows" {
-		return removeWindowsEnv()
-	}
-	return removeUnixEnv()
-}
 
 func homeDir() string {
 	dir, err := os.UserHomeDir()
@@ -73,6 +58,22 @@ func windowsEnvPairs(block []byte) []envPair {
 		}
 	}
 	return pairs
+}
+
+func pairMap(pairs []envPair) map[string]string {
+	vars := make(map[string]string, len(pairs))
+	for _, pair := range pairs {
+		vars[pair.name] = pair.value
+	}
+	return vars
+}
+
+func pairNames(pairs []envPair) []string {
+	names := make([]string, len(pairs))
+	for i, pair := range pairs {
+		names[i] = pair.name
+	}
+	return names
 }
 
 func trimQuotes(value string) string {

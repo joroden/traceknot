@@ -23,6 +23,8 @@ func main() {
 			os.Exit(cli.RunExport(os.Args[2:]))
 		case "post-install":
 			os.Exit(cli.RunPostInstall())
+		case "daemon":
+			os.Exit(cli.RunDaemon())
 		case "help", "-h", "--help":
 			cli.PrintUsage()
 			os.Exit(0)

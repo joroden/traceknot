@@ -9,10 +9,13 @@ import (
 	"traceknot/internal/config"
 	"traceknot/internal/install/agenthooks"
 	"traceknot/internal/install/agentskills"
-	"traceknot/internal/install/autostart"
+	"traceknot/internal/platform"
 )
 
 func Apply(ctx context.Context, patch Patch) error {
+	mu.Lock()
+	defer mu.Unlock()
+
 	exe, err := resolveExe()
 	if err != nil {
 		return err
@@ -43,9 +46,9 @@ func Apply(ctx context.Context, patch Patch) error {
 
 func applyAutostart(ctx context.Context, on bool) error {
 	if on {
-		return autostart.Enable(ctx)
+		return platform.Current.AutostartEnable(ctx)
 	}
-	return autostart.Disable(ctx)
+	return platform.Current.AutostartDisable(ctx)
 }
 
 func applyHooks(exe string, wants map[string]bool) error {

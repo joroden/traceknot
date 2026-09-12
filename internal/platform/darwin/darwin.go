@@ -1,9 +1,9 @@
-package autostart
+//go:build darwin
+
+package darwin
 
 import (
-	"context"
 	"os"
-	"os/exec"
 	"path/filepath"
 )
 
@@ -17,8 +17,4 @@ func home() string {
 
 func daemonLogPath() string {
 	return filepath.Join(home(), ".traceknot", "daemon.log")
-}
-
-func runQuiet(ctx context.Context, name string, args ...string) {
-	_ = exec.CommandContext(ctx, name, args...).Run()
 }
