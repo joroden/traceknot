@@ -29,7 +29,6 @@ function Get-TkSha256 {
 	return (Get-FileHash -Path $Path -Algorithm SHA256).Hash.ToLowerInvariant()
 }
 
-Write-Host "Installing traceknot..."
 Log-TkInstall "install started"
 
 if ($env:TRACEKNOT_VERSION) {
@@ -88,5 +87,3 @@ Log-TkInstall "install complete"
 Write-Host ""
 Write-Host "Installation complete!"
 Write-Host "Dashboard available at: $DaemonUrl/"
-Write-Host "Reconfigure anytime with: traceknot"
-Write-Host "Installation log: $InstallLog"
