@@ -64,11 +64,45 @@ func Open(path string) (*Store, error) {
 		_ = db.Close()
 		return nil, fmt.Errorf("apply scaling indexes migration: %w", err)
 	}
+	if err := ensureColumn(store.db, "claims", "offer_fingerprint", `ALTER TABLE claims ADD COLUMN offer_fingerprint TEXT NOT NULL DEFAULT ''`); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	if err := ensureColumn(store.db, "claims", "offer_prompt_fingerprint", `ALTER TABLE claims ADD COLUMN offer_prompt_fingerprint TEXT NOT NULL DEFAULT ''`); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
 	if err := store.seedInstallTime(); err != nil {
 		_ = db.Close()
 		return nil, err
 	}
 	return store, nil
+}
+
+func ensureColumn(db *sql.DB, table string, column string, addColumnDDL string) error {
+	rows, err := db.Query(`PRAGMA table_info(` + table + `)`)
+	if err != nil {
+		return fmt.Errorf("inspect %s columns: %w", table, err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var cid, notnull, pk int
+		var name, ctype string
+		var dflt any
+		if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+			return fmt.Errorf("scan %s column: %w", table, err)
+		}
+		if name == column {
+			return nil
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("read %s columns: %w", table, err)
+	}
+	if _, err := db.Exec(addColumnDDL); err != nil {
+		return fmt.Errorf("add %s.%s column: %w", table, column, err)
+	}
+	return nil
 }
 
 func (store *Store) seedInstallTime() error {

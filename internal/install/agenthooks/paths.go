@@ -61,3 +61,11 @@ func copilotPermissionsPath() (string, error) {
 	}
 	return filepath.Join(home, "permissions-config.json"), nil
 }
+
+func copilotHooksPath() (string, error) {
+	home, err := copilotHome()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(home, "hooks", "traceknot.json"), nil
+}

@@ -100,6 +100,8 @@ type claimResponse struct {
 
 type offerRequest struct {
 	SessionID string `json:"session_id"`
+	TurnKey   string `json:"turn_key"`
+	Prompt    string `json:"prompt"`
 }
 
 func (picker *Picker) handleOfferPicker(writer http.ResponseWriter, request *http.Request) {
@@ -116,16 +118,28 @@ func (picker *Picker) handleOfferPicker(writer http.ResponseWriter, request *htt
 		httputil.WriteError(writer, http.StatusInternalServerError, "offer_failed", err.Error())
 		return
 	}
+	fingerprint := ""
+	if body.TurnKey != "" {
+		fingerprint = stableid.From("turn", body.TurnKey)
+	}
+	promptFingerprint := ""
+	if body.Prompt != "" {
+		promptFingerprint = stableid.From("prompt", body.Prompt)
+	}
 	now := time.Now().UnixMilli()
-	status, created, err := picker.store.OfferPicker(request.Context(), sessionID, now)
+	outcome, created, err := picker.store.OfferPicker(request.Context(), sessionID, fingerprint, promptFingerprint, now)
 	if err != nil {
 		httputil.WriteError(writer, http.StatusInternalServerError, "offer_failed", err.Error())
 		return
 	}
-	if created {
+	status := outcome.Status
+	switch {
+	case created:
 		status = "offered"
-	} else if status != store.ClaimStatusClaimed && config.Load().RequireWorkItem {
-		if err := picker.store.ResetPendingClaim(request.Context(), sessionID, now); err != nil {
+	case outcome.Status == store.ClaimStatusClaimed:
+	case claim.IsDuplicateOffer(fingerprint, promptFingerprint, outcome, now):
+	case config.Load().RequireWorkItem:
+		if err := picker.store.ResetPendingClaim(request.Context(), sessionID, fingerprint, promptFingerprint, now); err != nil {
 			httputil.WriteError(writer, http.StatusInternalServerError, "offer_failed", err.Error())
 			return
 		}

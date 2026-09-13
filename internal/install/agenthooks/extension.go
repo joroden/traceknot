@@ -26,7 +26,27 @@ func extensionInstall(path string, exe string) error {
 	if err := os.WriteFile(path, []byte(rendered), 0o644); err != nil {
 		return fmt.Errorf("write %s: %w", path, err)
 	}
-	return enableCopilotExperimental()
+	return nil
+}
+
+func extensionRemove(path string, _ string) error {
+	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("remove %s: %w", path, err)
+	}
+	_ = os.Remove(filepath.Dir(path))
+	return nil
+}
+
+func extensionInstalled(path string, exe string) bool {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return false
+	}
+	escapedExe, err := json.Marshal(exe)
+	if err != nil {
+		return false
+	}
+	return strings.Contains(string(content), string(escapedExe))
 }
 
 func SeedCopilotExtensionPermission(location string) error {
@@ -79,24 +99,4 @@ func enableCopilotExperimental() error {
 	}
 	document["experimental"] = true
 	return writeJSON(settingsPath, document)
-}
-
-func extensionRemove(path string, exe string) error {
-	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("remove %s: %w", path, err)
-	}
-	_ = os.Remove(filepath.Dir(path))
-	return nil
-}
-
-func extensionInstalled(path string, exe string) bool {
-	content, err := os.ReadFile(path)
-	if err != nil {
-		return false
-	}
-	escapedExe, err := json.Marshal(exe)
-	if err != nil {
-		return false
-	}
-	return strings.Contains(string(content), string(escapedExe))
 }

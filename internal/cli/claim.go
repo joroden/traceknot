@@ -33,34 +33,57 @@ func RunClaim(args []string) int {
 		logClaim("claim invoked, no session payload: " + string(payload))
 		return 0
 	}
+	prompt := hookPrompt(payload)
+	promptPreview := prompt
+	if len(promptPreview) > 40 {
+		promptPreview = promptPreview[:40]
+	}
+	turnKey := hookTurnKey(payload)
 	if !daemonHealthy(ctx, *server) {
 		logClaim("claim: session " + sessionID + ", daemon not running, skipped")
 		return 0
 	}
-	status, err := offerPicker(ctx, *server, sessionID)
+	status, err := offerPicker(ctx, *server, sessionID, turnKey, prompt)
 	if err != nil {
 		logClaim("claim: session " + sessionID + ", offer failed: " + err.Error())
 		return 0
 	}
-	if status != "offered" {
-		logClaim("claim: session " + sessionID + " already has an outcome (" + status + "), skipped")
+	silent := *agent == "copilot" && turnKey != ""
+	switch status {
+	case "claimed":
+		return 0
+	case "offered":
+		logClaim("claim: opening picker for session " + sessionID + ", prompt=" + fmt.Sprintf("%q", promptPreview))
+		outcome, err := runSelectFlow(ctx, *server, sessionID)
+		if err != nil {
+			logClaim("claim: session " + sessionID + ", picker failed: " + err.Error())
+		}
+		return decideBlock(sessionID, *agent, err == nil && outcome.Status == "claimed", silent)
+	case "pending", "skipped":
+		logClaim("claim: session " + sessionID + " reusing existing offer (" + status + "), prompt=" + fmt.Sprintf("%q", promptPreview))
+		outcome, err := waitForOutcome(ctx, *server, sessionID)
+		if err != nil {
+			logClaim("claim: session " + sessionID + ", wait for outcome failed: " + err.Error())
+		}
+		return decideBlock(sessionID, *agent, err == nil && outcome.Status == "claimed", silent)
+	default:
 		return 0
 	}
-	logClaim("claim: opening picker for session " + sessionID)
-	outcome, err := runSelectFlow(ctx, *server, sessionID)
-	if err != nil {
-		logClaim("claim: session " + sessionID + ", picker failed: " + err.Error())
-	}
-	claimed := err == nil && outcome.Status == "claimed"
-	if claimed || *agent == "" {
+}
+
+func decideBlock(sessionID string, agent string, claimed bool, silent bool) int {
+	if claimed || agent == "" {
 		return 0
 	}
 	if !config.Load().RequireWorkItem {
 		return 0
 	}
-	logClaim("claim: session " + sessionID + " blocked (" + *agent + "), required mode on")
+	logClaim("claim: session " + sessionID + " blocked (" + agent + "), required mode on")
+	if silent {
+		return 2
+	}
 	reason := "No work item was assigned to this session and assignment is required. The run was not allowed to continue."
-	if *agent == "codex" {
+	if agent == "codex" {
 		decision, err := json.Marshal(map[string]string{"decision": "block", "reason": reason})
 		if err == nil {
 			fmt.Println(string(decision))
@@ -71,20 +94,8 @@ func RunClaim(args []string) int {
 	return 2
 }
 
-func hookSessionID(payload []byte) (string, bool) {
-	var fields map[string]any
-	if err := json.Unmarshal(payload, &fields); err != nil {
-		return "", false
-	}
-	sessionID, _ := fields["session_id"].(string)
-	if sessionID == "" {
-		sessionID, _ = fields["sessionId"].(string)
-	}
-	return sessionID, sessionID != ""
-}
-
-func offerPicker(ctx context.Context, server string, sessionID string) (string, error) {
-	body, err := json.Marshal(map[string]string{"session_id": sessionID})
+func offerPicker(ctx context.Context, server string, sessionID string, turnKey string, prompt string) (string, error) {
+	body, err := json.Marshal(map[string]string{"session_id": sessionID, "turn_key": turnKey, "prompt": prompt})
 	if err != nil {
 		return "", err
 	}
