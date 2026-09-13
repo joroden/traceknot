@@ -27,6 +27,8 @@ New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
 $Temp = Join-Path $BinDir ".traceknot-install-$PID"
 try {
 	Copy-Item -Force $SourceBinary $Temp
+	try { Unblock-File -Path $Temp -ErrorAction SilentlyContinue } catch {
+	}
 	if (Test-Path $Binary) {
 		& $Binary stop *> $null
 		Start-Sleep -Milliseconds 300
