@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 )
@@ -27,17 +26,10 @@ func extensionInstall(path string, exe string) error {
 	if err := os.WriteFile(path, []byte(rendered), 0o644); err != nil {
 		return fmt.Errorf("write %s: %w", path, err)
 	}
-	if err := enableCopilotExperimental(); err != nil {
-		return err
-	}
-	return seedCopilotExtensionPermission()
+	return enableCopilotExperimental()
 }
 
-func seedCopilotExtensionPermission() error {
-	location, err := copilotPermissionLocation()
-	if err != nil {
-		return err
-	}
+func SeedCopilotExtensionPermission(location string) error {
 	settingsPath, err := copilotPermissionsPath()
 	if err != nil {
 		return err
@@ -71,19 +63,6 @@ func seedCopilotExtensionPermission() error {
 		"extensionName": copilotExtensionName,
 	})
 	return writeJSON(settingsPath, document)
-}
-
-func copilotPermissionLocation() (string, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("resolve home: %w", err)
-	}
-	if output, err := exec.Command("git", "-C", home, "rev-parse", "--show-toplevel").Output(); err == nil {
-		if root := strings.TrimSpace(string(output)); root != "" {
-			return filepath.Clean(root), nil
-		}
-	}
-	return filepath.Clean(home), nil
 }
 
 func enableCopilotExperimental() error {

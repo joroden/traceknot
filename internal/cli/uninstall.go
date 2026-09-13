@@ -28,6 +28,9 @@ func RunUninstall(args []string) int {
 	if err := agentenv.RemoveEnv(); err != nil {
 		fmt.Fprintln(os.Stderr, "uninstall: env:", err)
 	}
+	if err := agentenv.RemoveCopilotShim(); err != nil {
+		fmt.Fprintln(os.Stderr, "uninstall: copilot shim:", err)
+	}
 	if err := agentenv.RemoveCodex(); err != nil {
 		fmt.Fprintln(os.Stderr, "uninstall: codex config:", err)
 	}
