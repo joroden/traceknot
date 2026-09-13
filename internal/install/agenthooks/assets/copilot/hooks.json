@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "hooks": {
+    "userPromptSubmitted": [
+      {
+        "type": "command",
+        "command": "{{TRACEKNOT_BIN}} claim --agent copilot",
+        "timeoutSec": 240
+      }
+    ]
+  }
+}

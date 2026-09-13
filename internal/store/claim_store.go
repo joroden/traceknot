@@ -25,16 +25,16 @@ func (store *Store) OutcomeForSession(ctx context.Context, sessionID string) (*O
 	return claim.OutcomeForSession(ctx, store.db, sessionID)
 }
 
-func (store *Store) OfferPicker(ctx context.Context, sessionID string, nowUnixMs int64) (string, bool, error) {
-	return claim.Offer(ctx, store.db, sessionID, nowUnixMs)
+func (store *Store) OfferPicker(ctx context.Context, sessionID string, fingerprint string, promptFingerprint string, nowUnixMs int64) (*Outcome, bool, error) {
+	return claim.Offer(ctx, store.db, sessionID, fingerprint, promptFingerprint, nowUnixMs)
 }
 
 func (store *Store) RecordSkip(ctx context.Context, sessionID string, nowUnixMs int64) error {
 	return claim.RecordSkip(ctx, store.db, sessionID, nowUnixMs)
 }
 
-func (store *Store) ResetPendingClaim(ctx context.Context, sessionID string, nowUnixMs int64) error {
-	return claim.ResetPending(ctx, store.db, sessionID, nowUnixMs)
+func (store *Store) ResetPendingClaim(ctx context.Context, sessionID string, fingerprint string, promptFingerprint string, nowUnixMs int64) error {
+	return claim.ResetPending(ctx, store.db, sessionID, fingerprint, promptFingerprint, nowUnixMs)
 }
 
 func (store *Store) UpsertRecentWorkItem(ctx context.Context, item RecentWorkItem) error {

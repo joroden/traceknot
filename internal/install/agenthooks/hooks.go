@@ -1,8 +1,6 @@
 package agenthooks
 
-import (
-	"os"
-)
+import "os"
 
 type Provider struct {
 	Binary    string
@@ -13,9 +11,9 @@ type Provider struct {
 }
 
 var Providers = []Provider{
-	{Binary: "claude", path: claudeSettingsPath, install: jsonHookInstall("claude"), remove: jsonHookRemove, installed: jsonHookInstalled},
-	{Binary: "codex", path: codexHooksPath, install: jsonHookInstall("codex"), remove: jsonHookRemove, installed: jsonHookInstalled},
-	{Binary: "copilot", path: copilotExtensionPath, install: extensionInstall, remove: extensionRemove, installed: extensionInstalled},
+	{Binary: "claude", path: claudeSettingsPath, install: claudeInstall, remove: claudeRemove, installed: jsonHookInstalled},
+	{Binary: "codex", path: codexHooksPath, install: codexInstall, remove: codexRemove, installed: jsonHookInstalled},
+	{Binary: "copilot", path: copilotExtensionPath, install: copilotInstall, remove: copilotRemove, installed: extensionInstalled},
 }
 
 func (p Provider) ConfigPath() (string, error) {
@@ -47,6 +45,50 @@ func (p Provider) Installed(exe string) bool {
 		return false
 	}
 	return p.installed(path, exe)
+}
+
+func claudeInstall(path, exe string) error {
+	return jsonHookInstall("claude")(path, exe)
+}
+
+func claudeRemove(path, exe string) error {
+	return jsonHookRemove(path, exe)
+}
+
+func codexInstall(path, exe string) error {
+	return jsonHookInstall("codex")(path, exe)
+}
+
+func codexRemove(path, exe string) error {
+	return jsonHookRemove(path, exe)
+}
+
+func copilotInstall(path, exe string) error {
+	if err := extensionInstall(path, exe); err != nil {
+		return err
+	}
+	if err := enableCopilotExperimental(); err != nil {
+		return err
+	}
+	hooksPath, err := copilotHooksPath()
+	if err != nil {
+		return err
+	}
+	return jsonHookInstall("copilot")(hooksPath, exe)
+}
+
+func copilotRemove(path, exe string) error {
+	if err := extensionRemove(path, exe); err != nil {
+		return err
+	}
+	hooksPath, err := copilotHooksPath()
+	if err != nil {
+		return err
+	}
+	if !fileExists(hooksPath) {
+		return nil
+	}
+	return jsonHookRemove(hooksPath, exe)
 }
 
 func jsonHookInstall(vendor string) func(path string, exe string) error {
