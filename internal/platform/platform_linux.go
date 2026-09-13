@@ -23,6 +23,7 @@ func (linuxPlatform) KillProcess(ctx context.Context, pid string) {
 }
 
 func (linuxPlatform) FreePort(ctx context.Context, port string) {
+	linux.FreePortOnWindowsHost(ctx, port)
 	freePort(ctx, port)
 }
 
