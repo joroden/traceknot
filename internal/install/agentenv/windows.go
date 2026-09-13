@@ -5,6 +5,7 @@ package agentenv
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -42,7 +43,43 @@ func ApplyCopilotShim(exe string) error {
 			return err
 		}
 	}
+	for _, host := range powershellHosts {
+		changed, err := ensureProfileScriptsCanRun(host.exe)
+		switch {
+		case changed:
+			fmt.Println(host.label + ": traceknot's Copilot integration needs permission to run a script on startup, which was turned off on this account by default; traceknot turned it on. To undo this, run in " + host.label + ": Set-ExecutionPolicy -Scope CurrentUser Restricted")
+		case err != nil:
+			fmt.Fprintln(os.Stderr, "traceknot: couldn't enable "+host.label+" scripts for the Copilot integration:", err)
+		}
+	}
 	return nil
+}
+
+var powershellHosts = []struct {
+	exe   string
+	label string
+}{
+	{"powershell", "Windows PowerShell"},
+	{"pwsh", "PowerShell 7"},
+}
+
+func ensureProfileScriptsCanRun(shell string) (bool, error) {
+	if _, err := exec.LookPath(shell); err != nil {
+		return false, nil
+	}
+	out, err := exec.Command(shell, "-NoProfile", "-NonInteractive", "-Command", "Get-ExecutionPolicy").Output()
+	if err != nil {
+		return false, fmt.Errorf("check policy: %w", err)
+	}
+	if strings.TrimSpace(string(out)) != "Restricted" {
+		return false, nil
+	}
+	output, err := exec.Command(shell, "-NoProfile", "-NonInteractive", "-Command",
+		"Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force").CombinedOutput()
+	if err != nil {
+		return false, fmt.Errorf("set policy: %s", strings.TrimSpace(string(output)))
+	}
+	return true, nil
 }
 
 func RemoveCopilotShim() error {
