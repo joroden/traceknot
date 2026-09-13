@@ -6,47 +6,61 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 )
 
-const scheduledTaskName = "traceknot"
+const startupScriptName = "traceknot.vbs"
 
 func AutostartEnabled(ctx context.Context) bool {
-	command := exec.CommandContext(ctx, "schtasks", "/query", "/tn", scheduledTaskName)
-	hidden(command)
-	return command.Run() == nil
+	path, err := startupScriptPath()
+	if err != nil {
+		return false
+	}
+	_, err = os.Stat(path)
+	return err == nil
 }
 
 func AutostartEnable(ctx context.Context, exe string) error {
-	launcher := launcherPath(exe)
-	if err := os.WriteFile(launcher, []byte(launcherScript(exe)), 0o644); err != nil {
-		return fmt.Errorf("write launcher: %w", err)
+	path, err := startupScriptPath()
+	if err != nil {
+		return fmt.Errorf("locate startup folder: %w", err)
 	}
-	command := exec.CommandContext(ctx, "schtasks", "/create", "/tn", scheduledTaskName,
-		"/tr", "wscript.exe //B \""+launcher+"\"", "/sc", "onlogon", "/rl", "limited", "/f")
-	hidden(command)
-	if err := command.Run(); err != nil {
-		return fmt.Errorf("create scheduled task: %w", err)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return fmt.Errorf("create startup folder: %w", err)
+	}
+	unblock(exe)
+	if err := os.WriteFile(path, []byte(launcherScript(exe)), 0o644); err != nil {
+		return fmt.Errorf("write startup script: %w", err)
 	}
 	return nil
 }
 
 func AutostartDisable(ctx context.Context, exe string) error {
-	if !AutostartEnabled(ctx) {
-		return nil
+	path, err := startupScriptPath()
+	if err != nil {
+		return fmt.Errorf("locate startup folder: %w", err)
 	}
-	command := exec.CommandContext(ctx, "schtasks", "/delete", "/tn", scheduledTaskName, "/f")
-	hidden(command)
-	_ = command.Run()
-	_ = os.Remove(launcherPath(exe))
+	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("remove startup script: %w", err)
+	}
 	return nil
 }
 
-func launcherPath(exe string) string {
-	return filepath.Join(filepath.Dir(exe), "autostart-launch.vbs")
+func startupScriptPath() (string, error) {
+	appData := os.Getenv("APPDATA")
+	if appData == "" {
+		return "", fmt.Errorf("APPDATA is not set")
+	}
+	return filepath.Join(appData, "Microsoft", "Windows", "Start Menu", "Programs", "Startup", startupScriptName), nil
 }
 
 func launcherScript(exe string) string {
 	return "CreateObject(\"WScript.Shell\").Run Chr(34) & \"" + exe + "\" & Chr(34) & \" daemon\", 0, False\n"
+}
+
+// unblock strips the Zone.Identifier alternate data stream (Windows' Mark of
+// the Web) from exe, if present, so launching it doesn't trigger the "Open
+// File - Security Warning" prompt. Absence of the stream is not an error.
+func unblock(exe string) {
+	_ = os.Remove(exe + ":Zone.Identifier")
 }
