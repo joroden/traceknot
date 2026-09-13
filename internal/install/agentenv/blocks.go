@@ -71,6 +71,12 @@ func removeBlock(path string, start string, end string) error {
 	for len(kept) > 0 && strings.TrimSpace(kept[len(kept)-1]) == "" {
 		kept = kept[:len(kept)-1]
 	}
+	if len(kept) == 0 {
+		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("remove %s: %w", path, err)
+		}
+		return nil
+	}
 	if err := os.WriteFile(path, []byte(strings.Join(kept, "\n")+"\n"), 0o644); err != nil {
 		return fmt.Errorf("write %s: %w", path, err)
 	}
