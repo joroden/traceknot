@@ -17,6 +17,9 @@ func RunSettings() int {
 		fmt.Fprintln(os.Stderr, "traceknot: env:", err)
 		return 1
 	}
+	if err := agentenv.ApplyCopilotShim(exe); err != nil {
+		fmt.Fprintln(os.Stderr, "traceknot: copilot shim:", err)
+	}
 	if err := agentenv.ApplyCodex(); err != nil {
 		fmt.Fprintln(os.Stderr, "traceknot: codex config:", err)
 	}

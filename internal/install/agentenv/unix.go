@@ -75,3 +75,41 @@ func RemoveEnv() error {
 	}
 	return nil
 }
+
+func ApplyCopilotShim(exe string) error {
+	shimBlock, err := loadSnippet("unix/copilot-shim.sh")
+	if err != nil {
+		return err
+	}
+	rendered := strings.ReplaceAll(string(shimBlock), "{{TRACEKNOT_BIN}}", exe)
+	for _, profile := range profileCandidates() {
+		if err := upsertBlock(profile, rendered); err != nil {
+			return err
+		}
+	}
+	if platform.Current.IsWSL() {
+		if err := upsertBlock(vscodeServerEnvSetupPath(), rendered); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func RemoveCopilotShim() error {
+	shimBlock, err := loadSnippet("unix/copilot-shim.sh")
+	if err != nil {
+		return err
+	}
+	start, end := blockMarkers(shimBlock)
+	for _, profile := range profileCandidates() {
+		if err := removeBlock(profile, start, end); err != nil {
+			return err
+		}
+	}
+	if platform.Current.IsWSL() {
+		if err := removeBlock(vscodeServerEnvSetupPath(), start, end); err != nil {
+			return err
+		}
+	}
+	return nil
+}
