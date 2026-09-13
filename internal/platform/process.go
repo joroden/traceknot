@@ -2,10 +2,12 @@ package platform
 
 import (
 	"context"
+	"net"
 	"strconv"
 	"strings"
+	"time"
 
-	"github.com/shirou/gopsutil/v4/net"
+	gopsnet "github.com/shirou/gopsutil/v4/net"
 	"github.com/shirou/gopsutil/v4/process"
 )
 
@@ -39,22 +41,33 @@ func freePort(ctx context.Context, port string) {
 	if err != nil {
 		return
 	}
-	conns, err := net.ConnectionsWithContext(ctx, "tcp")
-	if err != nil {
-		return
+	conns, err := gopsnet.ConnectionsWithContext(ctx, "tcp")
+	if err == nil {
+		killed := make(map[int32]bool)
+		for _, conn := range conns {
+			if conn.Status != "LISTEN" || conn.Laddr.Port != uint32(portNum) || conn.Pid <= 0 || killed[conn.Pid] {
+				continue
+			}
+			if proc, err := process.NewProcessWithContext(ctx, conn.Pid); err == nil {
+				_ = proc.KillWithContext(ctx)
+				killed[conn.Pid] = true
+			}
+		}
 	}
-	killed := make(map[int32]bool)
-	for _, conn := range conns {
-		if conn.Status != "LISTEN" || conn.Laddr.Port != uint32(portNum) || conn.Pid <= 0 || killed[conn.Pid] {
-			continue
+	waitPortFree(port)
+}
+
+func waitPortFree(port string) {
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		ln, err := net.Listen("tcp", "127.0.0.1:"+port)
+		if err == nil {
+			_ = ln.Close()
+			return
 		}
-		proc, err := process.NewProcessWithContext(ctx, conn.Pid)
-		if err != nil {
-			continue
+		if time.Now().After(deadline) {
+			return
 		}
-		if isTraceknotProcess(ctx, proc) {
-			_ = proc.KillWithContext(ctx)
-			killed[conn.Pid] = true
-		}
+		time.Sleep(100 * time.Millisecond)
 	}
 }
