@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-08-12",
+  "updated_at": "2026-09-13",
   "prices": [
     {
       "id": "claude-3.7-sonnet",
@@ -188,6 +188,26 @@
       "input": 10,
       "output": 50,
       "input_cached": 1,
+      "cache_write": 12.5,
+      "cache_write_1h": 20
+    },
+    {
+      "id": "claude-fable-5-1",
+      "vendor": "anthropic",
+      "name": "Claude Fable 5.1",
+      "input": 10,
+      "output": 50,
+      "input_cached": 0.25,
+      "cache_write": 12.5,
+      "cache_write_1h": 20
+    },
+    {
+      "id": "claude-mythos-5-1",
+      "vendor": "anthropic",
+      "name": "Claude Mythos 5.1",
+      "input": 10,
+      "output": 50,
+      "input_cached": 0.25,
       "cache_write": 12.5,
       "cache_write_1h": 20
     },
@@ -501,6 +521,16 @@
       "cache_write": 6.25
     },
     {
+      "id": "gpt-5.6-sol",
+      "vendor": "openai",
+      "name": "GPT-5.6 Sol \u2264272k pricing from 2026-08-21",
+      "input": 4.0,
+      "output": 20.0,
+      "input_cached": 0.4,
+      "cache_write": 5.0,
+      "effective_from": "2026-08-21"
+    },
+    {
       "id": "gpt-5.6-sol-272k",
       "vendor": "openai",
       "name": "GPT-5.6 Sol >272k",
@@ -508,6 +538,16 @@
       "output": 45.0,
       "input_cached": 1.0,
       "cache_write": 12.5
+    },
+    {
+      "id": "gpt-5.6-sol-272k",
+      "vendor": "openai",
+      "name": "GPT-5.6 Sol >272k pricing from 2026-08-21",
+      "input": 8.0,
+      "output": 30.0,
+      "input_cached": 0.8,
+      "cache_write": 10.0,
+      "effective_from": "2026-08-21"
     },
     {
       "id": "gpt-5.6",
@@ -519,6 +559,16 @@
       "cache_write": 6.25
     },
     {
+      "id": "gpt-5.6",
+      "vendor": "openai",
+      "name": "GPT-5.6 Sol \u2264272k pricing from 2026-08-21",
+      "input": 4.0,
+      "output": 20.0,
+      "input_cached": 0.4,
+      "cache_write": 5.0,
+      "effective_from": "2026-08-21"
+    },
+    {
       "id": "gpt-5.6-272k",
       "vendor": "openai",
       "name": "GPT-5.6 Sol >272k",
@@ -526,6 +576,32 @@
       "output": 45.0,
       "input_cached": 1.0,
       "cache_write": 12.5
+    },
+    {
+      "id": "gpt-5.6-272k",
+      "vendor": "openai",
+      "name": "GPT-5.6 Sol >272k pricing from 2026-08-21",
+      "input": 8.0,
+      "output": 30.0,
+      "input_cached": 0.8,
+      "cache_write": 10.0,
+      "effective_from": "2026-08-21"
+    },
+    {
+      "id": "gpt-6-astra",
+      "vendor": "openai",
+      "name": "GPT-6 Astra \u2264272k",
+      "input": 10.0,
+      "output": 50.0,
+      "input_cached": 1.0
+    },
+    {
+      "id": "gpt-6-astra-272k",
+      "vendor": "openai",
+      "name": "GPT-6 Astra >272k",
+      "input": 20.0,
+      "output": 75.0,
+      "input_cached": 2.0
     },
     {
       "id": "gpt-5.6-luna",
@@ -588,6 +664,23 @@
       "input": 1.5,
       "output": 7.5,
       "input_cached": 0.15
+    },
+    {
+      "id": "gemini-3.8-flash",
+      "vendor": "google",
+      "name": "Gemini 3.8 Flash (introductory, through 2026-12-31)",
+      "input": 0.75,
+      "output": 3.75,
+      "input_cached": 0.075
+    },
+    {
+      "id": "gemini-3.8-flash",
+      "vendor": "google",
+      "name": "Gemini 3.8 Flash",
+      "input": 1.5,
+      "output": 7.5,
+      "input_cached": 0.15,
+      "effective_from": "2027-01-01"
     },
     {
       "id": "kimi-k2.7-code",
