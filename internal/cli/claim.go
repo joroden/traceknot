@@ -38,6 +38,10 @@ func RunClaim(args []string) int {
 	if len(promptPreview) > 40 {
 		promptPreview = promptPreview[:40]
 	}
+	if hookDelegatedPrompt(payload) {
+		logClaim("claim: session " + sessionID + " delegated by a parent agent, skipped, prompt=" + fmt.Sprintf("%q", promptPreview))
+		return 0
+	}
 	turnKey := hookTurnKey(payload)
 	if !daemonHealthy(ctx, *server) {
 		logClaim("claim: session " + sessionID + ", daemon not running, skipped")
