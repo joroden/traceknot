@@ -99,11 +99,11 @@ function PromptHeader(context: HeaderContext) {
   );
 }
 
-function StartedHeader(context: HeaderContext) {
+function LastActiveHeader(context: HeaderContext) {
   const meta = requireMeta(context);
   return (
     <ColumnHeader
-      {...sortHeaderProps(meta, "started", "Started")}
+      {...sortHeaderProps(meta, "last_active", "Last used")}
       filter={
         <FilterPopover active={meta.startUnixMs !== undefined || meta.endUnixMs !== undefined}>
           <DateRangeFilter
@@ -183,13 +183,20 @@ function promptCell(info: RowContext) {
   return <span className="truncate text-zinc-100 light:text-zinc-900">{titleOf(row)}</span>;
 }
 
-function startedCell(info: RowContext) {
+function lastActiveCell(info: RowContext) {
   const row = info.row.original;
-  if (row.kind === "group") {
-    return <span className="text-xs text-zinc-600">—</span>;
-  }
+  const lastActiveUnixMs =
+    row.kind === "group" ? row.group.last_active_unix_ms : row.session.ended_at_unix_ms;
   return (
-    <span className="text-xs text-zinc-400 light:text-zinc-500">{formatTimestamp(row.session.started_at_unix_ms)}</span>
+    <span
+      className={
+        row.kind === "group"
+          ? "text-xs font-semibold text-zinc-200 light:text-zinc-800"
+          : "text-xs text-zinc-400 light:text-zinc-500"
+      }
+    >
+      {formatTimestamp(lastActiveUnixMs)}
+    </span>
   );
 }
 
@@ -322,11 +329,12 @@ export const workItemsColumns: TableColumn<WorkItemsRow>[] = [
     cell: outputTokensCell,
   },
   {
-    id: "started",
-    accessorFn: (row: WorkItemsRow) => (row.kind === "group" ? null : row.session.started_at_unix_ms),
+    id: "last_active",
+    accessorFn: (row: WorkItemsRow) =>
+      row.kind === "group" ? row.group.last_active_unix_ms : row.session.ended_at_unix_ms,
     size: 130,
-    header: StartedHeader,
-    cell: startedCell,
+    header: LastActiveHeader,
+    cell: lastActiveCell,
   },
   {
     id: "claim",
