@@ -40,3 +40,12 @@ func hookTurnKey(payload []byte) string {
 		return ""
 	}
 }
+
+func hookDelegatedPrompt(payload []byte) bool {
+	var fields map[string]any
+	if err := json.Unmarshal(payload, &fields); err != nil {
+		return false
+	}
+	traceParent, _ := fields["traceparent"].(string)
+	return traceParent != ""
+}
