@@ -36,7 +36,7 @@ export interface SessionsResponse {
   total_count: number;
 }
 
-export type SortKey = "cost" | "input_tokens" | "output_tokens" | "started" | "duration" | "last_active";
+export type SortKey = "cost" | "input_tokens" | "output_tokens" | "duration" | "last_active";
 export type SortDir = "asc" | "desc";
 
 export interface SessionsFilter {
@@ -75,6 +75,7 @@ export interface WorkItemGroup {
   duration_ms: number | null;
   input_tokens: number;
   output_tokens: number;
+  last_active_unix_ms: number | null;
 }
 
 export interface WorkItemGroupsResponse {

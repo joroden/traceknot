@@ -14,9 +14,10 @@ type GroupRow struct {
 	SessionCount     int64
 	Cost             float64
 
-	DurationMs   *float64
-	InputTokens  int64
-	OutputTokens int64
+	DurationMs       *float64
+	InputTokens      int64
+	OutputTokens     int64
+	LastActiveUnixMs *int64
 }
 
 type GroupSortSpec struct {
@@ -69,11 +70,11 @@ func buildFilteredSessionsWhere(filter GroupListFilter) (string, []any) {
 		args = append(args, "%"+filter.Query+"%")
 	}
 	if filter.StartUnixMs > 0 {
-		where = append(where, "s.started_at_unix_ms >= ?")
+		where = append(where, "s.ended_at_unix_ms >= ?")
 		args = append(args, filter.StartUnixMs)
 	}
 	if filter.EndUnixMs > 0 {
-		where = append(where, "s.started_at_unix_ms < ?")
+		where = append(where, "s.ended_at_unix_ms < ?")
 		args = append(args, filter.EndUnixMs)
 	}
 	return strings.Join(where, " AND "), args
@@ -83,7 +84,7 @@ func buildGroupsCTE(filter GroupListFilter) (string, []any) {
 	whereSQL, args := buildFilteredSessionsWhere(filter)
 	cte := `
 		filtered AS (
-			SELECT s.cost, s.duration_ms, s.input_tokens, s.output_tokens,
+			SELECT s.cost, s.duration_ms, s.input_tokens, s.output_tokens, s.ended_at_unix_ms,
 				c.status, c.work_item_key, c.work_item_title, c.provider AS work_item_provider
 			FROM sessions s
 			LEFT JOIN claims c ON c.session_id = s.session_id
@@ -93,7 +94,8 @@ func buildGroupsCTE(filter GroupListFilter) (string, []any) {
 			SELECT
 				work_item_key, work_item_provider, work_item_title AS title, 0 AS is_unclaimed,
 				COUNT(*) AS session_count, SUM(cost) AS cost,
-				SUM(duration_ms) AS duration_ms, SUM(input_tokens) AS input_tokens, SUM(output_tokens) AS output_tokens
+				SUM(duration_ms) AS duration_ms, SUM(input_tokens) AS input_tokens, SUM(output_tokens) AS output_tokens,
+				MAX(ended_at_unix_ms) AS last_active_unix_ms
 			FROM filtered
 			WHERE status = 'claimed'
 			GROUP BY work_item_provider, work_item_key
@@ -101,7 +103,8 @@ func buildGroupsCTE(filter GroupListFilter) (string, []any) {
 			SELECT
 				'' AS work_item_key, '' AS work_item_provider, 'Unclaimed' AS title, 1 AS is_unclaimed,
 				COUNT(*) AS session_count, SUM(cost) AS cost,
-				SUM(duration_ms) AS duration_ms, SUM(input_tokens) AS input_tokens, SUM(output_tokens) AS output_tokens
+				SUM(duration_ms) AS duration_ms, SUM(input_tokens) AS input_tokens, SUM(output_tokens) AS output_tokens,
+				MAX(ended_at_unix_ms) AS last_active_unix_ms
 			FROM filtered
 			WHERE status IS NULL OR status != 'claimed'
 			HAVING COUNT(*) > 0
@@ -144,7 +147,7 @@ func ListGroups(ctx context.Context, db Querier, filter GroupListFilter) (GroupL
 
 	listQuery := "WITH " + cte + `
 		SELECT work_item_key, work_item_provider, title, is_unclaimed, session_count, cost,
-			duration_ms, input_tokens, output_tokens, COUNT(*) OVER () AS total_count
+			duration_ms, input_tokens, output_tokens, last_active_unix_ms, COUNT(*) OVER () AS total_count
 		FROM grouped` + scopeSQL + `
 		ORDER BY ` + buildGroupOrderBy(filter.Sort) + `
 		LIMIT ? OFFSET ?`
@@ -163,7 +166,7 @@ func ListGroups(ctx context.Context, db Querier, filter GroupListFilter) (GroupL
 		if err := rows.Scan(
 			&row.WorkItemKey, &row.WorkItemProvider, &row.Title, &isUnclaimed,
 			&row.SessionCount, &row.Cost,
-			&row.DurationMs, &row.InputTokens, &row.OutputTokens,
+			&row.DurationMs, &row.InputTokens, &row.OutputTokens, &row.LastActiveUnixMs,
 			&result.TotalCount,
 		); err != nil {
 			return GroupListResult{}, fmt.Errorf("scan work item group: %w", err)

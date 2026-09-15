@@ -32,6 +32,7 @@ type workItemGroupJSON struct {
 	DurationMs       *float64 `json:"duration_ms"`
 	InputTokens      int64    `json:"input_tokens"`
 	OutputTokens     int64    `json:"output_tokens"`
+	LastActiveUnixMs *int64   `json:"last_active_unix_ms"`
 }
 
 func parseGroupSort(raw string) store.GroupSortSpec {
@@ -78,6 +79,7 @@ func (workItems *WorkItems) handleList(writer http.ResponseWriter, request *http
 			DurationMs:       row.DurationMs,
 			InputTokens:      row.InputTokens,
 			OutputTokens:     row.OutputTokens,
+			LastActiveUnixMs: row.LastActiveUnixMs,
 		})
 	}
 	httputil.WriteJSON(writer, http.StatusOK, map[string]any{

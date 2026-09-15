@@ -44,7 +44,7 @@ func queryRollupTotals(ctx context.Context, db Querier, sessionID string) (Rollu
 	err := db.QueryRowContext(ctx, `
 		SELECT
 			MIN(started_at_unix_ms),
-			MAX(ended_at_unix_ms),
+			MAX(COALESCE(ended_at_unix_ms, started_at_unix_ms)),
 			COALESCE(SUM(CASE WHEN kind = 'chat' AND name = 'user' THEN 1 ELSE 0 END), 0),
 			COUNT(*),
 			COALESCE(SUM(CASE WHEN kind = 'tool_call' THEN 1 ELSE 0 END), 0),

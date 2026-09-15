@@ -79,11 +79,11 @@ func buildListWhere(filter ListFilter) (string, []any) {
 		args = append(args, "%"+filter.Query+"%")
 	}
 	if filter.StartUnixMs > 0 {
-		where = append(where, "s.started_at_unix_ms >= ?")
+		where = append(where, "s.ended_at_unix_ms >= ?")
 		args = append(args, filter.StartUnixMs)
 	}
 	if filter.EndUnixMs > 0 {
-		where = append(where, "s.started_at_unix_ms < ?")
+		where = append(where, "s.ended_at_unix_ms < ?")
 		args = append(args, filter.EndUnixMs)
 	}
 	if filter.Unclaimed {
