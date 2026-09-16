@@ -6,11 +6,16 @@
   <a href="https://traceknot.com"><img src="https://img.shields.io/badge/website-traceknot.com-7c3aed" alt="Website" /></a>
 </p>
 
-**Know what every work item actually cost.** traceknot is a local telemetry
-collector for AI coding agents (Claude Code, Codex CLI, Copilot CLI, VSCode
-Copilot Chat). It ties each session back to a GitHub/GitLab/Jira issue and
-gives you a dashboard of real cost and activity per task — no account,
-nothing leaves your machine.
+**Know what every work item actually cost.** traceknot is a local AI coding
+cost tracker and telemetry collector for AI coding agents (Claude Code, Codex
+CLI, Copilot CLI, VSCode Copilot Chat). It tracks token usage, cache tier, and
+tool calls, then ties each session back to a GitHub/GitLab/Jira issue so you get
+a dashboard of real AI spend and activity per task.
+
+If you've asked *"how do I track my AI coding costs?"*, *"how much am I spending
+on LLM APIs?"*, or *"what did this task actually cost?"* — this is the tool
+for that. It's a self-hosted, open-source app that runs and exports data to a database on your own device (Not affiliated with other projects named
+Traceknot.)
 
 Beyond the top-line number, you can open any session and see where it actually
 went — which step ran long, where the agent stalled or looped, and what each
@@ -105,6 +110,62 @@ traceknot            # open Settings in your browser
 traceknot uninstall  # remove traceknot (keeps ~/.traceknot data — see above)
 traceknot help       # usage
 ```
+
+## Common questions
+
+### How do I track my AI coding costs?
+
+Install traceknot, then use Claude Code, Codex CLI, Copilot CLI, or VSCode
+Copilot Chat as you normally would. traceknot records the token usage, cache
+tier, and tool calls of every session on your machine and rolls the cost up per
+task — so you see what each work item actually cost instead of one undifferentiated
+monthly bill.
+
+### How much am I spending on Claude Code (or Codex CLI / Copilot)?
+
+Every session is priced from its model, tokens, and cache tier, then attributed
+to the work item it belongs to. Open the dashboard to see the running total per
+task, per session, or per agent. No account or API key is needed — traceknot
+reads the telemetry the agents already emit locally.
+
+### How do I see the cost per GitHub issue, Jira ticket, or GitLab issue?
+
+When a session starts, traceknot pauses it and asks you to claim the work item it
+is for. Pick a GitHub, GitLab, or Jira issue (searched through the CLI you
+already have signed in), and that session's full cost rolls up under that issue.
+Attribution is enforced at the start of the session, not guessed afterward.
+
+### Can I track AI agent costs without sending data to the cloud?
+
+Yes — that's the point. traceknot is self-hosted and open source, so the
+telemetry never leaves your machine. It works with the agents you already use
+rather than requiring a hosted proxy or gateway.
+
+### How do I find out why a task cost so much?
+
+Traceknot comes with an opt-in `traceknot-analyze` skill that your coding agent can use. If the skill is enabled (from the Settings page), you can ask a questions such as 'Why did session X cost so much', or 'Why did work item Y require so much time when it was something very simple?'.
+
+This can help you fine tune your other skills/context files so that the next your agent starts working on a task, it has the necessary context upfront.
+
+### Does traceknot work with OpenTelemetry?
+
+Yes. traceknot is OpenTelemetry-native: each agent exports OTLP logs and traces
+to a local receiver at `http://127.0.0.1:4318` (`POST /v1/logs`,
+`POST /v1/traces`). traceknot ingests that OTLP data, normalizes it per agent,
+and turns it into a session tree and cost dashboard instead of forwarding it to
+a remote OTLP backend. If you want per-task cost attribution for coding agents,
+that's what it does out of the box.
+
+### Is traceknot free and open source?
+
+Yes. traceknot is open source under the license in [LICENSE](LICENSE), and the
+core cost tracking and dashboard run locally with no paid tier required.
+
+### Why do you suport only Copilot/Claude/Codex?
+
+Truthfully, my expectations are that the information this tool provides will be most valuable to small and enterprise teams. And chances are, they are using one of the three major harnesses.
+
+Another reason why some other popular agents (like Opencode) are not yet supported is because they do not have an OTEL exporter as of yet (or at least not an official one).
 
 ## Development
 
