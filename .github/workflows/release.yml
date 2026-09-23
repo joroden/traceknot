@@ -14,20 +14,11 @@ jobs:
       contents: write
       id-token: write
       attestations: write
-    env:
-      RCLONE_CONFIG_R2_TYPE: s3
-      RCLONE_CONFIG_R2_PROVIDER: Cloudflare
-      RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-      RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-      RCLONE_CONFIG_R2_REGION: auto
-      RCLONE_CONFIG_R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
-      RCLONE_CONFIG_R2_NO_CHECK_BUCKET: "true"
-      R2_BUCKET: ${{ secrets.R2_BUCKET_NAME }}
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-          token: ${{ secrets.RELEASE_TOKEN }}
+          persist-credentials: false
 
       - name: Compute next version
         id: version
@@ -61,41 +52,46 @@ jobs:
         run: make dist
 
       - name: Install rclone
-        run: curl https://rclone.org/install.sh | sudo bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes rclone
 
       - name: Generate GitHub build provenance attestation
         uses: actions/attest-build-provenance@v4
         with:
           subject-path: "dist/downloads/traceknot-*"
 
-      - name: Upload versioned binaries to R2
+      - name: Publish release files to R2
         env:
           TAG: ${{ steps.version.outputs.tag }}
+          RCLONE_CONFIG_R2_TYPE: s3
+          RCLONE_CONFIG_R2_PROVIDER: Cloudflare
+          RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          RCLONE_CONFIG_R2_REGION: auto
+          RCLONE_CONFIG_R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          RCLONE_CONFIG_R2_NO_CHECK_BUCKET: "true"
+          R2_BUCKET: ${{ secrets.R2_BUCKET_NAME }}
         run: |
           set -euo pipefail
           rclone copy dist/downloads/ "r2:$R2_BUCKET/releases/$TAG/downloads/" \
             --no-traverse
-
-      - name: Upload install scripts to R2 (stable root path)
-        run: |
-          set -euo pipefail
           rclone copy dist/ "r2:$R2_BUCKET/" \
             --no-traverse \
             --include "install.sh" --include "install.ps1"
-
-      - name: Point latest.txt at this release
-        env:
-          TAG: ${{ steps.version.outputs.tag }}
-        run: |
-          set -euo pipefail
           echo -n "$TAG" | rclone rcat "r2:$R2_BUCKET/latest.txt"
 
       - name: Create and push tag
         env:
           TAG: ${{ steps.version.outputs.tag }}
-          GIT_COMMITTER_NAME: github-actions[bot]
-          GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
-        run: scripts/release/create-tag.sh "$TAG"
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          set -euo pipefail
+          tag_sha=$(gh api "repos/$GITHUB_REPOSITORY/git/tags" \
+            -f tag="$TAG" -f message="Release $TAG" \
+            -f object="$GITHUB_SHA" -f type=commit --jq .sha)
+          gh api "repos/$GITHUB_REPOSITORY/git/refs" \
+            -f ref="refs/tags/$TAG" -f sha="$tag_sha" >/dev/null
 
       - name: Create GitHub release
         env:

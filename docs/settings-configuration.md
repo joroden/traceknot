@@ -30,6 +30,16 @@ Copilot Chat). Turning a hook off stops traceknot from tracking that agent
 at all — no pause, no telemetry, nothing recorded — without affecting the
 others.
 
+On Windows, the Copilot CLI integration adds a function to your PowerShell
+profile. If profile scripts are disabled by the effective `Restricted`
+execution policy, installation saves the current-user policy and changes it to
+`RemoteSigned`. `traceknot uninstall` restores the saved policy when it is still
+`RemoteSigned`; if you changed it afterward, your choice is left in place.
+Launching Copilot CLI through that profile function also grants traceknot's
+Copilot extension permission for the current repository without another prompt.
+Turning off the Copilot hook or uninstalling traceknot removes those extension
+permissions.
+
 ## Analysis skill
 
 One switch per agent, off by default. Turning it on lets that agent read its
