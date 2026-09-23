@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"html"
 	"strings"
 
 	"traceknot/internal/export/content"
@@ -19,7 +20,7 @@ func renderText(dedup *content.Deduper, label, text string) string {
 	}
 	stripped := content.StripBinaryBlobs(text)
 	collapsed := content.CollapseRepeatedLines(stripped)
-	return "```\n" + collapsed + "\n```"
+	return fencedText(collapsed, "")
 }
 
 func renderJSON(raw string) string {
@@ -32,7 +33,32 @@ func renderJSON(raw string) string {
 	}
 	var buf bytes.Buffer
 	if err := json.Indent(&buf, []byte(raw), "", "  "); err == nil {
-		return "```json\n" + buf.String() + "\n```"
+		return fencedText(buf.String(), "json")
 	}
-	return "```\n" + raw + "\n```"
+	return fencedText(raw, "")
+}
+
+func fencedText(value, language string) string {
+	longest, run := 2, 0
+	for i := 0; i < len(value); i++ {
+		if value[i] == '`' {
+			run++
+			if run > longest {
+				longest = run
+			}
+		} else {
+			run = 0
+		}
+	}
+	fence := strings.Repeat("`", longest+1)
+	return fence + language + "\n" + value + "\n" + fence
+}
+
+func escapeMarkdownInline(value string) string {
+	value = strings.NewReplacer("\r", " ", "\n", " ").Replace(value)
+	value = html.EscapeString(value)
+	return strings.NewReplacer(
+		"\\", "\\\\", "`", "\\`", "*", "\\*", "_", "\\_",
+		"[", "\\[", "]", "\\]", "!", "\\!", "|", "\\|", "~", "\\~",
+	).Replace(value)
 }

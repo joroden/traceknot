@@ -20,10 +20,10 @@ func flagsDoc(computed []flags.Flag, filenames map[string]string) string {
 		links := make([]string, 0, len(f.NodeIDs))
 		for _, id := range f.NodeIDs {
 			if file, ok := filenames[id]; ok {
-				links = append(links, fmt.Sprintf("[%s](nodes/%s)", id, file))
+				links = append(links, fmt.Sprintf("[%s](nodes/%s)", escapeMarkdownInline(id), file))
 			}
 		}
-		fmt.Fprintf(&b, "- **%s** — %s (%s)\n", f.Kind, f.Reason, strings.Join(links, ", "))
+		fmt.Fprintf(&b, "- **%s** — %s (%s)\n", f.Kind, escapeMarkdownInline(f.Reason), strings.Join(links, ", "))
 	}
 	return b.String()
 }

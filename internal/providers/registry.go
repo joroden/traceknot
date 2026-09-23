@@ -3,6 +3,7 @@ package providers
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 )
 
@@ -14,6 +15,7 @@ type probeCacheEntry struct {
 type Registry struct {
 	providers []Provider
 	probeTTL  time.Duration
+	mu        sync.RWMutex
 	cache     map[string]probeCacheEntry
 }
 
@@ -50,11 +52,16 @@ func (registry *Registry) Probe(ctx context.Context, providerID string) (Probe, 
 }
 
 func (registry *Registry) probe(ctx context.Context, item Provider) Probe {
-	if entry, found := registry.cache[item.ID()]; found && time.Now().Before(entry.expiresAt) {
+	registry.mu.RLock()
+	entry, found := registry.cache[item.ID()]
+	registry.mu.RUnlock()
+	if found && time.Now().Before(entry.expiresAt) {
 		return entry.probe
 	}
 	result := item.Probe(ctx)
+	registry.mu.Lock()
 	registry.cache[item.ID()] = probeCacheEntry{probe: result, expiresAt: time.Now().Add(registry.probeTTL)}
+	registry.mu.Unlock()
 	return result
 }
 

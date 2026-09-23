@@ -32,12 +32,12 @@ func renderNode(seq int, node *export.Node, dedup *content.Deduper, relPath stri
 	var b strings.Builder
 	fmt.Fprintf(&b, "# %03d · %s", seq, node.Kind)
 	if node.Name != nil {
-		fmt.Fprintf(&b, " · %s", *node.Name)
+		fmt.Fprintf(&b, " · %s", escapeMarkdownInline(*node.Name))
 	}
 	b.WriteString("\n\n")
-	fmt.Fprintf(&b, "- node_id: %s\n", node.NodeID)
+	fmt.Fprintf(&b, "- node_id: %s\n", escapeMarkdownInline(node.NodeID))
 	if node.Status != nil {
-		fmt.Fprintf(&b, "- status: %s\n", *node.Status)
+		fmt.Fprintf(&b, "- status: %s\n", escapeMarkdownInline(*node.Status))
 	}
 	fmt.Fprintf(&b, "- started: %s\n", formatTime(node.StartedAtUnixMs))
 	fmt.Fprintf(&b, "- duration: %s\n", formatDuration(node.DurationMs))
@@ -86,10 +86,10 @@ func renderChatDetail(b *strings.Builder, detail *store.NodeDetail, dedup *conte
 func renderToolCallDetail(b *strings.Builder, detail *store.NodeDetail, dedup *content.Deduper, relPath string) {
 	tc := detail.ToolCall
 	if name := deref(tc.ToolName); name != "" {
-		fmt.Fprintf(b, "- tool: %s\n", name)
+		fmt.Fprintf(b, "- tool: %s\n", escapeMarkdownInline(name))
 	}
 	if decision := deref(tc.ApprovalDecision); decision != "" {
-		fmt.Fprintf(b, "- approval: %s\n", decision)
+		fmt.Fprintf(b, "- approval: %s\n", escapeMarkdownInline(decision))
 	}
 	b.WriteString("\n## Arguments\n\n")
 	b.WriteString(renderJSON(deref(tc.ArgumentsJSON)))
@@ -105,7 +105,7 @@ func renderToolCallDetail(b *strings.Builder, detail *store.NodeDetail, dedup *c
 func renderAgentDetail(b *strings.Builder, detail *store.NodeDetail, dedup *content.Deduper, relPath string) {
 	agent := detail.Agent
 	if agentType := deref(agent.AgentType); agentType != "" {
-		fmt.Fprintf(b, "- agent_type: %s\n", agentType)
+		fmt.Fprintf(b, "- agent_type: %s\n", escapeMarkdownInline(agentType))
 	}
 	b.WriteString("\n## Spawn prompt\n\n")
 	b.WriteString(renderText(dedup, relPath+"#spawn", deref(agent.SpawnPrompt)))

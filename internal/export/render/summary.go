@@ -9,14 +9,14 @@ import (
 
 func summaryDoc(meta *store.SessionMeta) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "# Session %s\n\n", meta.SessionID)
-	fmt.Fprintf(&b, "- provider: %s\n", meta.Provider)
-	fmt.Fprintf(&b, "- title: %s\n", meta.Title)
+	fmt.Fprintf(&b, "# Session %s\n\n", escapeMarkdownInline(meta.SessionID))
+	fmt.Fprintf(&b, "- provider: %s\n", escapeMarkdownInline(meta.Provider))
+	fmt.Fprintf(&b, "- title: %s\n", escapeMarkdownInline(meta.Title))
 	if meta.ServiceName != nil {
-		fmt.Fprintf(&b, "- service: %s\n", *meta.ServiceName)
+		fmt.Fprintf(&b, "- service: %s\n", escapeMarkdownInline(*meta.ServiceName))
 	}
 	if meta.Status != nil {
-		fmt.Fprintf(&b, "- status: %s\n", *meta.Status)
+		fmt.Fprintf(&b, "- status: %s\n", escapeMarkdownInline(*meta.Status))
 	}
 	fmt.Fprintf(&b, "- started: %s\n", formatTime(meta.StartedAtUnixMs))
 	fmt.Fprintf(&b, "- ended: %s\n", formatTime(meta.EndedAtUnixMs))
@@ -26,7 +26,7 @@ func summaryDoc(meta *store.SessionMeta) string {
 	fmt.Fprintf(&b, "- tokens: in=%d (cached=%d, cache_write=%d) out=%d reasoning=%d\n",
 		meta.InputTokens, meta.CachedInputTokens, meta.CacheWriteTokens, meta.OutputTokens, meta.ReasoningTokens)
 	if models := strings.TrimSpace(meta.ModelsJSON); models != "" && models != "[]" && models != "null" {
-		fmt.Fprintf(&b, "- models: %s\n", models)
+		fmt.Fprintf(&b, "- models: %s\n", escapeMarkdownInline(models))
 	}
 	b.WriteString("\nSee timeline.md for the full ordered list of turns/tool calls, and flags.md for the nodes most worth reading first.\n")
 	return b.String()

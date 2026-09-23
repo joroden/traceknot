@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -110,6 +111,10 @@ func startClaudeUsageWatcher(
 func requireSameOrigin(next http.Handler, listenAddr string) http.Handler {
 	allowed := allowedOrigins(listenAddr)
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		if !allowed["http://"+strings.ToLower(request.Host)] {
+			httputil.WriteError(writer, http.StatusForbidden, "host_forbidden", "request host is not allowed")
+			return
+		}
 		if !isSafeMethod(request.Method) {
 			if origin := request.Header.Get("Origin"); origin != "" && !allowed[origin] {
 				httputil.WriteError(writer, http.StatusForbidden, "cross_origin_forbidden", "cross-origin requests are not allowed")

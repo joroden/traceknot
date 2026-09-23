@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -17,6 +18,7 @@ const (
 
 type GitHub struct {
 	env        cliEnv
+	mu         sync.RWMutex
 	scopeCache githubScopeCache
 }
 
@@ -155,8 +157,11 @@ func (gitHub *GitHub) Search(ctx context.Context, query string, limit int) ([]Wo
 
 func (gitHub *GitHub) searchScope(ctx context.Context) (githubSearchScope, error) {
 	now := time.Now()
-	if gitHub.scopeCache.expiresAt.After(now) {
-		return gitHub.scopeCache.value, nil
+	gitHub.mu.RLock()
+	cached := gitHub.scopeCache
+	gitHub.mu.RUnlock()
+	if cached.expiresAt.After(now) {
+		return cached.value, nil
 	}
 
 	userOutput, err := gitHub.env.run(ctx, "gh", "api", "user")
@@ -194,7 +199,9 @@ func (gitHub *GitHub) searchScope(ctx context.Context) (githubSearchScope, error
 	}
 
 	scope := githubSearchScope{login: user.Login, qualifiers: qualifiers}
+	gitHub.mu.Lock()
 	gitHub.scopeCache = githubScopeCache{expiresAt: now.Add(githubScopeCacheTTL), value: scope}
+	gitHub.mu.Unlock()
 	return scope, nil
 }
 

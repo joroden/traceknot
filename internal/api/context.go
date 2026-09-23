@@ -8,6 +8,12 @@ import (
 	"traceknot/internal/httputil"
 )
 
+const (
+	maxContextEntries        = 128
+	maxContextPromptBytes    = 128 * 1024
+	maxContextSessionIDBytes = 1024
+)
+
 type contextRegistry struct {
 	mu    sync.Mutex
 	items map[string]promptContextEntry
@@ -29,9 +35,24 @@ func newContextRegistry() *contextRegistry {
 func (registry *contextRegistry) record(sessionID string, prompt string) {
 	registry.mu.Lock()
 	defer registry.mu.Unlock()
+	now := time.Now()
+	oldestID := ""
+	var oldestExpiry time.Time
+	for id, entry := range registry.items {
+		if !entry.expiresAt.After(now) {
+			delete(registry.items, id)
+			continue
+		}
+		if oldestID == "" || entry.expiresAt.Before(oldestExpiry) {
+			oldestID, oldestExpiry = id, entry.expiresAt
+		}
+	}
+	if _, exists := registry.items[sessionID]; !exists && len(registry.items) >= maxContextEntries {
+		delete(registry.items, oldestID)
+	}
 	registry.items[sessionID] = promptContextEntry{
 		prompt:    prompt,
-		expiresAt: time.Now().Add(registry.ttl),
+		expiresAt: now.Add(registry.ttl),
 	}
 }
 
@@ -61,6 +82,10 @@ func (picker *Picker) handleStoreContext(writer http.ResponseWriter, request *ht
 	}
 	if body.SessionID == "" {
 		httputil.WriteError(writer, http.StatusBadRequest, "missing_session", "session_id is required")
+		return
+	}
+	if len(body.SessionID) > maxContextSessionIDBytes || len(body.Prompt) > maxContextPromptBytes {
+		httputil.WriteError(writer, http.StatusRequestEntityTooLarge, "context_too_large", "prompt context is too large")
 		return
 	}
 	picker.contexts.record(body.SessionID, body.Prompt)
