@@ -33,7 +33,7 @@ func (p Provider) Remove(exe string) error {
 	if err != nil {
 		return err
 	}
-	if !fileExists(path) {
+	if !fileExists(path) && p.Binary != "copilot" {
 		return nil
 	}
 	return p.remove(path, exe)
@@ -85,10 +85,12 @@ func copilotRemove(path, exe string) error {
 	if err != nil {
 		return err
 	}
-	if !fileExists(hooksPath) {
-		return nil
+	if fileExists(hooksPath) {
+		if err := jsonHookRemove(hooksPath, exe); err != nil {
+			return err
+		}
 	}
-	return jsonHookRemove(hooksPath, exe)
+	return removeCopilotExtensionPermissions()
 }
 
 func jsonHookInstall(vendor string) func(path string, exe string) error {

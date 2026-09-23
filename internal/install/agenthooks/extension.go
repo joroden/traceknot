@@ -85,6 +85,46 @@ func SeedCopilotExtensionPermission(location string) error {
 	return writeJSON(settingsPath, document)
 }
 
+func removeCopilotExtensionPermissions() error {
+	settingsPath, err := copilotPermissionsPath()
+	if err != nil {
+		return err
+	}
+	if !fileExists(settingsPath) {
+		return nil
+	}
+	document, err := readJSONMap(settingsPath)
+	if err != nil {
+		return err
+	}
+	locations, _ := document["locations"].(map[string]any)
+	changed := false
+	for _, value := range locations {
+		entry, ok := value.(map[string]any)
+		if !ok {
+			continue
+		}
+		approvals, ok := entry["tool_approvals"].([]any)
+		if !ok {
+			continue
+		}
+		kept := make([]any, 0, len(approvals))
+		for _, approval := range approvals {
+			fields, ok := approval.(map[string]any)
+			if ok && fields["kind"] == "extension-permission-access" && fields["extensionName"] == copilotExtensionName {
+				changed = true
+				continue
+			}
+			kept = append(kept, approval)
+		}
+		entry["tool_approvals"] = kept
+	}
+	if !changed {
+		return nil
+	}
+	return writeJSON(settingsPath, document)
+}
+
 func enableCopilotExperimental() error {
 	settingsPath, err := copilotSettingsPath()
 	if err != nil {
