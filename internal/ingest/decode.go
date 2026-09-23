@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"compress/zlib"
 	"fmt"
+	"io"
 	"strings"
 
 	logspb "go.opentelemetry.io/proto/otlp/logs/v1"
@@ -23,25 +24,28 @@ func decodeBody(raw []byte, contentEncoding string) ([]byte, error) {
 			return nil, fmt.Errorf("invalid gzip body: %w", err)
 		}
 		defer reader.Close()
-		var output bytes.Buffer
-		if _, err := output.ReadFrom(reader); err != nil {
-			return nil, fmt.Errorf("invalid gzip body: %w", err)
-		}
-		return output.Bytes(), nil
+		return readDecodedBody(reader)
 	case "deflate":
 		reader, err := zlib.NewReader(bytes.NewReader(raw))
 		if err != nil {
 			return nil, fmt.Errorf("invalid deflate body: %w", err)
 		}
 		defer reader.Close()
-		var output bytes.Buffer
-		if _, err := output.ReadFrom(reader); err != nil {
-			return nil, fmt.Errorf("invalid deflate body: %w", err)
-		}
-		return output.Bytes(), nil
+		return readDecodedBody(reader)
 	default:
 		return nil, fmt.Errorf("unsupported content-encoding %q", contentEncoding)
 	}
+}
+
+func readDecodedBody(reader io.Reader) ([]byte, error) {
+	decoded, err := io.ReadAll(io.LimitReader(reader, defaultBodyLimitBytes+1))
+	if err != nil {
+		return nil, fmt.Errorf("invalid compressed body: %w", err)
+	}
+	if len(decoded) > defaultBodyLimitBytes {
+		return nil, fmt.Errorf("decoded request body exceeded the %d byte limit", defaultBodyLimitBytes)
+	}
+	return decoded, nil
 }
 
 type bodyEncoding string

@@ -2,6 +2,7 @@ package content
 
 import (
 	"encoding/json"
+	"html"
 	"math"
 	"sort"
 	"strconv"
@@ -47,7 +48,12 @@ func commonColumns(rows []map[string]any) []string {
 func renderTable(columns []string, rows []map[string]any) string {
 	var b strings.Builder
 	b.WriteString("| ")
-	b.WriteString(strings.Join(columns, " | "))
+	for i, column := range columns {
+		if i > 0 {
+			b.WriteString(" | ")
+		}
+		b.WriteString(escapeTableCell(column))
+	}
 	b.WriteString(" |\n|")
 	b.WriteString(strings.Repeat(" --- |", len(columns)))
 	b.WriteString("\n")
@@ -68,7 +74,7 @@ func cellText(value any) string {
 	case nil:
 		return ""
 	case string:
-		return strings.ReplaceAll(v, "|", "\\|")
+		return escapeTableCell(v)
 	case float64:
 		return formatFloat(v)
 	case bool:
@@ -78,8 +84,17 @@ func cellText(value any) string {
 		if err != nil {
 			return ""
 		}
-		return strings.ReplaceAll(string(encoded), "|", "\\|")
+		return escapeTableCell(string(encoded))
 	}
+}
+
+func escapeTableCell(value string) string {
+	value = strings.NewReplacer("\r", " ", "\n", " ").Replace(value)
+	value = html.EscapeString(value)
+	return strings.NewReplacer(
+		"\\", "\\\\", "`", "\\`", "*", "\\*", "_", "\\_",
+		"[", "\\[", "]", "\\]", "!", "\\!", "|", "\\|", "~", "\\~",
+	).Replace(value)
 }
 
 func formatFloat(v float64) string {

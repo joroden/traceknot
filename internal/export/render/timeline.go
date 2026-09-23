@@ -50,5 +50,5 @@ func preview(node *export.Node) string {
 }
 
 func escapeCell(s string) string {
-	return strings.ReplaceAll(s, "|", "\\|")
+	return escapeMarkdownInline(s)
 }

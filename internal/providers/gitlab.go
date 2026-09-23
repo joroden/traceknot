@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -20,6 +21,7 @@ var gitlabPersonalScopes = []string{"created_by_me", "assigned_to_me"}
 
 type GitLab struct {
 	env        cliEnv
+	mu         sync.RWMutex
 	groupCache gitlabGroupCache
 }
 
@@ -122,8 +124,11 @@ func (gitLab *GitLab) Search(ctx context.Context, query string, limit int) ([]Wo
 
 func (gitLab *GitLab) myGroupIDs(ctx context.Context) []int {
 	now := time.Now()
-	if gitLab.groupCache.expiresAt.After(now) {
-		return gitLab.groupCache.groupIDs
+	gitLab.mu.RLock()
+	cached := gitLab.groupCache
+	gitLab.mu.RUnlock()
+	if cached.expiresAt.After(now) {
+		return cached.groupIDs
 	}
 
 	output, err := gitLab.env.run(
@@ -145,7 +150,9 @@ func (gitLab *GitLab) myGroupIDs(ctx context.Context) []int {
 	for _, group := range groups {
 		groupIDs = append(groupIDs, group.ID)
 	}
+	gitLab.mu.Lock()
 	gitLab.groupCache = gitlabGroupCache{expiresAt: now.Add(gitlabGroupCacheTTL), groupIDs: groupIDs}
+	gitLab.mu.Unlock()
 	return groupIDs
 }
 

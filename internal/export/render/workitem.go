@@ -65,8 +65,8 @@ func workItemOverviewDoc(wi *export.WorkItem, summaries []sessionSummary) string
 	}
 
 	var b strings.Builder
-	fmt.Fprintf(&b, "# Work item %s/%s\n\n", wi.Provider, wi.Key)
-	fmt.Fprintf(&b, "- title: %s\n", wi.Title)
+	fmt.Fprintf(&b, "# Work item %s/%s\n\n", escapeMarkdownInline(wi.Provider), escapeMarkdownInline(wi.Key))
+	fmt.Fprintf(&b, "- title: %s\n", escapeMarkdownInline(wi.Title))
 	fmt.Fprintf(&b, "- sessions: %d\n", len(summaries))
 	fmt.Fprintf(&b, "- total cost: %s\n", formatCost(totalCost))
 	fmt.Fprintf(&b, "- total nodes: %d\n\n", totalNodes)
@@ -79,7 +79,7 @@ func workItemOverviewDoc(wi *export.WorkItem, summaries []sessionSummary) string
 		if s.flagCount == 0 {
 			continue
 		}
-		fmt.Fprintf(&b, "- [%s](%s/summary.md) — %d flagged nodes, see `%s/flags.md`\n", s.session.Meta.Title, s.dir, s.flagCount, s.dir)
+		fmt.Fprintf(&b, "- [%s](%s/summary.md) — %d flagged nodes, see `%s/flags.md`\n", escapeMarkdownInline(s.session.Meta.Title), s.dir, s.flagCount, s.dir)
 	}
 
 	b.WriteString("\n## All sessions, in order\n\n")
