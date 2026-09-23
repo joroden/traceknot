@@ -60,7 +60,7 @@ func recordsToEventsByConversation(byNativeID map[string][]shared.RawRecord) map
 	for nativeID, records := range byNativeID {
 		events := make([]Event, 0, len(records))
 		for _, record := range records {
-			if record.Signal != "log" && record.Signal != "rollout" {
+			if record.Signal != "log" && record.Signal != "rollout" && record.Signal != "session_index" {
 				continue
 			}
 			var event Event
