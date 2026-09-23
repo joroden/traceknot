@@ -51,19 +51,10 @@ jobs:
       - name: make dist
         run: make dist
 
-      - name: Install verified rclone
-        env:
-          RCLONE_VERSION: v1.75.1
-          RCLONE_ZIP_SHA256: 982b5aa772841168f8e380f139e9e787b2a105403e32b94da8676a0e1c0a13ab
+      - name: Install rclone
         run: |
-          set -euo pipefail
-          archive="$RUNNER_TEMP/rclone.zip"
-          curl -fsSLo "$archive" "https://downloads.rclone.org/$RCLONE_VERSION/rclone-$RCLONE_VERSION-linux-amd64.zip"
-          printf '%s  %s\n' "$RCLONE_ZIP_SHA256" "$archive" | sha256sum --check -
-          mkdir -p "$RUNNER_TEMP/rclone-bin"
-          unzip -jq "$archive" "rclone-$RCLONE_VERSION-linux-amd64/rclone" -d "$RUNNER_TEMP/rclone-bin"
-          echo "$RUNNER_TEMP/rclone-bin" >> "$GITHUB_PATH"
-          "$RUNNER_TEMP/rclone-bin/rclone" version
+          sudo apt-get update
+          sudo apt-get install --yes rclone
 
       - name: Generate GitHub build provenance attestation
         uses: actions/attest-build-provenance@v4
