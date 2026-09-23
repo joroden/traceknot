@@ -11,6 +11,9 @@ type RegroupFunc func(record shared.RawRecord) (nativeID string, ok bool)
 
 func (receiver *Receiver) RebuildProvider(ctx context.Context, normalizer shared.Normalizer, regroup RegroupFunc) error {
 	provider := normalizer.Provider()
+	lock := receiver.providerLock(provider)
+	lock.Lock()
+	defer lock.Unlock()
 
 	byNativeID, err := receiver.store.LoadRawSignalByProvider(ctx, provider)
 	if err != nil {

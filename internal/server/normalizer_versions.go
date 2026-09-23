@@ -19,7 +19,7 @@ type normalizerVersion struct {
 
 var normalizerVersions = map[string]normalizerVersion{
 	"claude":  {version: 6},
-	"codex":   {version: 4},
+	"codex":   {version: 6},
 	"copilot": {version: 6, regroup: copilot.RegroupNativeID},
 }
 

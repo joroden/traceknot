@@ -15,6 +15,7 @@ const (
 
 	eventRolloutMessage = "codex.rollout_message"
 	eventRolloutCall    = "codex.rollout_call"
+	eventSessionTitle   = "codex.session_title"
 )
 
 type Event struct {

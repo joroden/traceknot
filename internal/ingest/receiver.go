@@ -7,19 +7,21 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"sync"
 
+	"google.golang.org/protobuf/encoding/protojson"
 	"traceknot/internal/normalize/shared"
 	"traceknot/internal/store"
-	"google.golang.org/protobuf/encoding/protojson"
 )
 
 type Receiver struct {
-	store       *store.Store
-	normalizers map[string]shared.Normalizer
-	logger      *slog.Logger
-	captureDir  string
-	captureFile string
-	marshal     protojson.MarshalOptions
+	store         *store.Store
+	normalizers   map[string]shared.Normalizer
+	logger        *slog.Logger
+	captureDir    string
+	captureFile   string
+	marshal       protojson.MarshalOptions
+	providerLocks sync.Map
 }
 
 func NewReceiver(storeHandle *store.Store, normalizers map[string]shared.Normalizer, logger *slog.Logger) *Receiver {
@@ -99,6 +101,10 @@ func (receiver *Receiver) Ingest(ctx context.Context, normalizer shared.Normaliz
 		return
 	}
 	provider := normalizer.Provider()
+	lock := receiver.providerLock(provider)
+	lock.Lock()
+	defer lock.Unlock()
+
 	stored := make([]store.RawSignalRecord, 0, len(records))
 	touched := make(map[string]struct{}, len(records))
 	for _, record := range records {
@@ -144,6 +150,11 @@ func (receiver *Receiver) Ingest(ctx context.Context, normalizer shared.Normaliz
 			continue
 		}
 	}
+}
+
+func (receiver *Receiver) providerLock(provider string) *sync.Mutex {
+	lock, _ := receiver.providerLocks.LoadOrStore(provider, &sync.Mutex{})
+	return lock.(*sync.Mutex)
 }
 
 func (receiver *Receiver) loadScoped(

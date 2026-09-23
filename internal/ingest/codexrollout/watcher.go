@@ -21,6 +21,7 @@ type Watcher struct {
 
 	offsets         map[string]int64
 	conversationIDs map[string]string
+	indexEntries    map[string]string
 }
 
 func New(receiver *ingest.Receiver, normalizer shared.Normalizer, logger *slog.Logger) *Watcher {
@@ -31,6 +32,7 @@ func New(receiver *ingest.Receiver, normalizer shared.Normalizer, logger *slog.L
 		sessionsDir:     sessionsDir(),
 		offsets:         make(map[string]int64),
 		conversationIDs: make(map[string]string),
+		indexEntries:    make(map[string]string),
 	}
 }
 
@@ -57,6 +59,7 @@ func (watcher *Watcher) poll(ctx context.Context) {
 	for _, file := range files {
 		records = append(records, watcher.readNewLines(file)...)
 	}
+	records = append(records, watcher.readSessionIndex()...)
 	if len(records) == 0 {
 		return
 	}

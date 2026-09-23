@@ -61,7 +61,8 @@ func (builder *Builder) buildSession(
 		return nil, nil
 	}
 
-	if firstEvent(sorted, eventUserPrompt) == nil {
+	firstPrompt := firstEvent(sorted, eventUserPrompt)
+	if firstPrompt == nil || isTitleGenerationPrompt(*firstPrompt) {
 		return nil, nil
 	}
 
