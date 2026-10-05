@@ -3,6 +3,7 @@
 package darwin
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,12 +14,29 @@ func CanOpenBrowser() bool { return true }
 
 func OpenBrowser(target string) error {
 	if browser := findChromium(); browser != "" {
-		command := exec.Command("open", "-na", chromiumAppBundle(browser), "--args", "--app="+target)
+		command, err := chromiumCommand(browser, target)
+		if err != nil {
+			return err
+		}
 		if err := command.Start(); err == nil {
 			return nil
 		}
 	}
 	return OpenDefault(target)
+}
+
+func chromiumCommand(browser, target string) (*exec.Cmd, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, fmt.Errorf("resolve browser profile home: %w", err)
+	}
+	bundle := chromiumAppBundle(browser)
+	profile := filepath.Join(home, ".traceknot", "browser-profiles", filepath.Base(bundle))
+	if err := os.MkdirAll(profile, 0o700); err != nil {
+		return nil, fmt.Errorf("create browser profile: %w", err)
+	}
+	return exec.Command("open", "-na", bundle, "--args",
+		"--user-data-dir="+profile, "--no-first-run", "--no-default-browser-check", "--app="+target), nil
 }
 
 func OpenDefault(target string) error {
