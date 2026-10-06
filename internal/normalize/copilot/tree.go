@@ -79,7 +79,10 @@ func (builder *Builder) chatSeed(sessionID string, span *Span, parentNodeID *str
 	output64, _ := attributeInt(span.Attributes, "gen_ai.usage.output_tokens")
 	cacheRead, _ := attributeInt(span.Attributes, "gen_ai.usage.cache_read.input_tokens")
 
-	cacheCreate, _ := attributeInt(span.Attributes, "gen_ai.usage.cache_creation.input_tokens")
+	cacheWrite, hasCacheWrite := attributeInt(span.Attributes, "gen_ai.usage.cache_write.input_tokens")
+	if !hasCacheWrite {
+		cacheWrite, _ = attributeInt(span.Attributes, "gen_ai.usage.cache_creation.input_tokens")
+	}
 	reasoning, _ := attributeInt(span.Attributes, "gen_ai.usage.reasoning.output_tokens")
 	systemText, _ := attributeString(span.Attributes, "gen_ai.system_instructions")
 
@@ -95,7 +98,7 @@ func (builder *Builder) chatSeed(sessionID string, span *Span, parentNodeID *str
 			PreviewText:       shared.Preview("assistant", outputText),
 			InputTokens:       input64,
 			CachedInputTokens: cacheRead,
-			CacheWriteTokens:  cacheCreate,
+			CacheWriteTokens:  cacheWrite,
 			OutputTokens:      output64,
 			ReasoningTokens:   reasoning,
 			MetadataJSON:      shared.EventMetadata("chat"),
@@ -104,7 +107,7 @@ func (builder *Builder) chatSeed(sessionID string, span *Span, parentNodeID *str
 		PromptText: promptText,
 		OutputText: outputText,
 	}
-	seed.Cost = shared.NodeCost(seed.Model, input64, cacheRead, cacheCreate, 0, output64, 0, seed.StartedAtUnixMs, builder.catalog)
+	seed.Cost = shared.NodeCost(seed.Model, input64, cacheRead, cacheWrite, 0, output64, 0, seed.StartedAtUnixMs, builder.catalog)
 	return seed
 }
 
