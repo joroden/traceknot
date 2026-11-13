@@ -28,10 +28,12 @@ func Current(ctx context.Context) (State, error) {
 		skills = append(skills, ProviderState{Binary: provider.Binary, Enabled: provider.Installed()})
 	}
 
+	cfg := config.Load()
 	return State{
-		AutostartOn:     platform.Current.AutostartEnabled(ctx),
-		RequireWorkItem: config.Load().RequireWorkItem,
-		Hooks:           hooks,
-		Skills:          skills,
+		AutostartOn:              platform.Current.AutostartEnabled(ctx),
+		RequireWorkItem:          cfg.RequireWorkItem,
+		SkipNonInteractivePicker: cfg.SkipNonInteractivePicker,
+		Hooks:                    hooks,
+		Skills:                   skills,
 	}, nil
 }

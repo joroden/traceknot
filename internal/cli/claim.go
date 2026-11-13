@@ -42,6 +42,10 @@ func RunClaim(args []string) int {
 		logClaim("claim: session " + sessionID + " delegated by a parent agent, skipped, prompt=" + fmt.Sprintf("%q", promptPreview))
 		return 0
 	}
+	if config.Load().SkipNonInteractivePicker && nonInteractiveAgent(ctx, *agent) {
+		logClaim("claim: session " + sessionID + " non-interactive (" + *agent + "), picker skipped")
+		return 0
+	}
 	turnKey := hookTurnKey(payload)
 	if !daemonHealthy(ctx, *server) {
 		logClaim("claim: session " + sessionID + ", daemon not running, skipped")

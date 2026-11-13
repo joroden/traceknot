@@ -26,9 +26,16 @@ func Apply(ctx context.Context, patch Patch) error {
 			return fmt.Errorf("autostart: %w", err)
 		}
 	}
-	if patch.RequireWorkItem != nil {
-		if err := config.Save(config.Config{RequireWorkItem: *patch.RequireWorkItem}); err != nil {
-			return fmt.Errorf("work item requirement: %w", err)
+	if patch.RequireWorkItem != nil || patch.SkipNonInteractivePicker != nil {
+		cfg := config.Load()
+		if patch.RequireWorkItem != nil {
+			cfg.RequireWorkItem = *patch.RequireWorkItem
+		}
+		if patch.SkipNonInteractivePicker != nil {
+			cfg.SkipNonInteractivePicker = *patch.SkipNonInteractivePicker
+		}
+		if err := config.Save(cfg); err != nil {
+			return fmt.Errorf("work item settings: %w", err)
 		}
 	}
 	if patch.Hooks != nil {

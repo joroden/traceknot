@@ -8,7 +8,8 @@ import (
 )
 
 type Config struct {
-	RequireWorkItem bool `json:"require_work_item"`
+	RequireWorkItem          bool `json:"require_work_item"`
+	SkipNonInteractivePicker bool `json:"skip_non_interactive_picker"`
 }
 
 func Load() Config {
