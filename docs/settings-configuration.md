@@ -23,6 +23,19 @@ skip option entirely — the agent itself is blocked and won't start working
 on that prompt until something is claimed. See [Work Items](work-items.md)
 for what claiming looks like, including the free-text custom option.
 
+## Skip picker for non-interactive runs
+
+Off by default. Turn this on to let non-interactive CLI sessions run without
+opening the work item picker or waiting for a selection. This includes
+`claude -p` / `--print`, `codex exec` (or `e`) and `codex review`, and
+`copilot -p` / `--prompt`.
+
+These runs continue even when **Require a work item** is on. Telemetry is
+still recorded, and sessions without a work item appear in the unclaimed
+queue so you can assign them later. Interactive sessions keep their usual
+picker behavior. Detection uses the calling agent's process arguments;
+if those cannot be read, the usual picker behavior applies.
+
 ## Agent hooks
 
 One switch per supported agent (Claude Code, Codex CLI, Copilot CLI, VSCode

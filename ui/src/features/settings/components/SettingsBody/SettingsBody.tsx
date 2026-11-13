@@ -21,7 +21,9 @@ export function SettingsBody({ state, onPatch, restartNoticeActionable = true }:
       />
       <WorkItemCard
         requireWorkItem={state.require_work_item}
+        skipNonInteractivePicker={state.skip_non_interactive_picker}
         onChange={(required) => onPatch({ require_work_item: required })}
+        onSkipNonInteractivePickerChange={(skip) => onPatch({ skip_non_interactive_picker: skip })}
       />
       <SkillCard skills={state.skills} onToggle={(binary, enabled) => onPatch({ skills: { [binary]: enabled } })} />
     </div>

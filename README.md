@@ -101,7 +101,7 @@ also reachable from the dashboard's sidebar at any time:
 - **Startup** — start the daemon automatically on login.
 - **Agent hooks** — choose which agents traceknot collects telemetry from.
 - **Work items** — require every session to be claimed against a work item,
-  or leave it optional.
+  or leave it optional. Optionally skip the picker for non-interactive CLI runs.
 - **Session analysis skill** — let an agent inspect its own session cost and
   telemetry when you ask it to.
 

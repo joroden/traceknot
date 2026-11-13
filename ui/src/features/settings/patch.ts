@@ -4,6 +4,7 @@ export function stateToPatch(state: SettingsState): SettingsPatch {
   return {
     autostart_on: state.autostart_on,
     require_work_item: state.require_work_item,
+    skip_non_interactive_picker: state.skip_non_interactive_picker,
     hooks: providersToRecord(state.hooks),
     skills: providersToRecord(state.skills),
   };
@@ -14,6 +15,7 @@ export function mergePatch(state: SettingsState, patch: SettingsPatch): Settings
     ...state,
     autostart_on: patch.autostart_on ?? state.autostart_on,
     require_work_item: patch.require_work_item ?? state.require_work_item,
+    skip_non_interactive_picker: patch.skip_non_interactive_picker ?? state.skip_non_interactive_picker,
     hooks: patch.hooks ? mergeProviders(state.hooks, patch.hooks) : state.hooks,
     skills: patch.skills ? mergeProviders(state.skills, patch.skills) : state.skills,
   };
