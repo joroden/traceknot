@@ -32,12 +32,14 @@ import (
 
 func serviceNormalizers(catalog *pricing.Catalog) map[string]shared.Normalizer {
 	estimator := tokenize.NewEstimator(0)
+	codexNormalizer := codex.NewNormalizer(catalog, estimator)
 	copilotNormalizer := copilot.NewNormalizer(catalog, estimator)
 	return map[string]shared.Normalizer{
-		"codex_cli_rs":   codex.NewNormalizer(catalog, estimator),
-		"claude-code":    claude.NewNormalizer(catalog, estimator),
-		"github-copilot": copilotNormalizer,
-		"copilot-chat":   copilotNormalizer,
+		"codex_cli_rs":     codexNormalizer,
+		"codex-app-server": codexNormalizer,
+		"claude-code":      claude.NewNormalizer(catalog, estimator),
+		"github-copilot":   copilotNormalizer,
+		"copilot-chat":     copilotNormalizer,
 	}
 }
 
