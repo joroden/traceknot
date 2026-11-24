@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-08",
+  "updated_at": "2026-11-24",
   "prices": [
     {
       "id": "claude-3.7-sonnet",
@@ -271,6 +271,46 @@
       "input_cached": 0.25,
       "cache_write": 12.5,
       "cache_write_1h": 20
+    },
+    {
+      "id": "claude-fable-5-2",
+      "vendor": "anthropic",
+      "name": "Claude Fable 5.2",
+      "input": 8,
+      "output": 40,
+      "input_cached": 0.2,
+      "cache_write": 10,
+      "cache_write_1h": 16
+    },
+    {
+      "id": "claude-fable-5-2-fast",
+      "vendor": "anthropic",
+      "name": "Claude Fable 5.2 Fast",
+      "input": 16,
+      "output": 80,
+      "input_cached": 0.4,
+      "cache_write": 20,
+      "cache_write_1h": 32
+    },
+    {
+      "id": "claude-mythos-5-2",
+      "vendor": "anthropic",
+      "name": "Claude Mythos 5.2",
+      "input": 8,
+      "output": 40,
+      "input_cached": 0.2,
+      "cache_write": 10,
+      "cache_write_1h": 16
+    },
+    {
+      "id": "claude-mythos-5-2-fast",
+      "vendor": "anthropic",
+      "name": "Claude Mythos 5.2 Fast",
+      "input": 16,
+      "output": 80,
+      "input_cached": 0.4,
+      "cache_write": 20,
+      "cache_write_1h": 32
     },
     {
       "id": "gemini-3-1-pro-preview",
@@ -605,7 +645,8 @@
       "output": 20.0,
       "input_cached": 0.4,
       "cache_write": 5.0,
-      "effective_from": "2026-08-21"
+      "effective_from": "2026-08-21",
+      "effective_until": "2026-12-01T08:00:00Z"
     },
     {
       "id": "gpt-5.6-sol-272k",
@@ -624,7 +665,8 @@
       "output": 30.0,
       "input_cached": 0.8,
       "cache_write": 10.0,
-      "effective_from": "2026-08-21"
+      "effective_from": "2026-08-21",
+      "effective_until": "2026-12-01T08:00:00Z"
     },
     {
       "id": "gpt-5.6",
@@ -643,7 +685,8 @@
       "output": 20.0,
       "input_cached": 0.4,
       "cache_write": 5.0,
-      "effective_from": "2026-08-21"
+      "effective_from": "2026-08-21",
+      "effective_until": "2026-12-01T08:00:00Z"
     },
     {
       "id": "gpt-5.6-272k",
@@ -662,7 +705,8 @@
       "output": 30.0,
       "input_cached": 0.8,
       "cache_write": 10.0,
-      "effective_from": "2026-08-21"
+      "effective_from": "2026-08-21",
+      "effective_until": "2026-12-01T08:00:00Z"
     },
     {
       "id": "gpt-6-astra",
@@ -703,7 +747,7 @@
     {
       "id": "gpt-6.1-sol",
       "vendor": "openai",
-      "name": "GPT-6.1 Sol ≤272k",
+      "name": "GPT-6.1 Sol \u2264272k",
       "input": 2.0,
       "output": 10.0,
       "input_cached": 0.1,
@@ -753,6 +797,42 @@
       "output": 0.75,
       "input_cached": 0.02,
       "cache_write": 0.25
+    },
+    {
+      "id": "gpt-6.2-astra",
+      "vendor": "openai",
+      "name": "GPT-6.2 Astra \u2264272k",
+      "input": 8,
+      "output": 40,
+      "input_cached": 0.4,
+      "cache_write": 10
+    },
+    {
+      "id": "gpt-6.2-astra-272k",
+      "vendor": "openai",
+      "name": "GPT-6.2 Astra >272k",
+      "input": 16,
+      "output": 60,
+      "input_cached": 0.8,
+      "cache_write": 20
+    },
+    {
+      "id": "gpt-6.2-sol",
+      "vendor": "openai",
+      "name": "GPT-6.2 Sol \u2264272k",
+      "input": 2,
+      "output": 10,
+      "input_cached": 0.1,
+      "cache_write": 2.5
+    },
+    {
+      "id": "gpt-6.2-sol-272k",
+      "vendor": "openai",
+      "name": "GPT-6.2 Sol >272k",
+      "input": 4,
+      "output": 15,
+      "input_cached": 0.2,
+      "cache_write": 5.0
     },
     {
       "id": "gpt-5.6-luna",
@@ -896,6 +976,40 @@
       "effective_from": "2026-12-01"
     },
     {
+      "id": "gemini-4-carbon",
+      "vendor": "google",
+      "name": "Gemini 4 Carbon (introductory, through 2026-11-30)",
+      "input": 2,
+      "output": 10,
+      "input_cached": 0.1,
+      "effective_until": "2026-12-01"
+    },
+    {
+      "id": "gemini-4-carbon",
+      "vendor": "google",
+      "name": "Gemini 4 Carbon",
+      "input": 4,
+      "output": 20,
+      "input_cached": 0.2,
+      "effective_from": "2026-12-01"
+    },
+    {
+      "id": "gemini-4-hydrogen",
+      "vendor": "google",
+      "name": "Gemini 4 Hydrogen",
+      "input": 1.5,
+      "output": 7.5,
+      "input_cached": 0.075
+    },
+    {
+      "id": "gemini-4-neon",
+      "vendor": "google",
+      "name": "Gemini 4 Neon",
+      "input": 3,
+      "output": 15,
+      "input_cached": 0.15
+    },
+    {
       "id": "kimi-k2.7-code",
       "vendor": "moonshot-ai",
       "name": "Kimi K2.7 Code",
@@ -944,7 +1058,7 @@
     {
       "id": "grok-build-0.1-200k",
       "vendor": "xai",
-      "name": "Grok Build 0.1 \u2265200k",
+      "name": "Grok Build 0.1 ≥200k",
       "input": 2.0,
       "output": 4.0,
       "input_cached": 0.4
@@ -1012,6 +1126,42 @@
       "input": 0.2,
       "output": 1.2,
       "input_cached": 0.02
+    },
+    {
+      "id": "mai-code-2",
+      "vendor": "microsoft",
+      "name": "MAI Code 2 (introductory)",
+      "input": 0.5,
+      "output": 2.5,
+      "input_cached": 0.025,
+      "effective_until": "2027-05-17"
+    },
+    {
+      "id": "mai-code-2",
+      "vendor": "microsoft",
+      "name": "MAI Code 2",
+      "input": 1,
+      "output": 5,
+      "input_cached": 0.05,
+      "effective_from": "2027-05-17"
+    },
+    {
+      "id": "mai-code-2-flash",
+      "vendor": "microsoft",
+      "name": "MAI Code 2 Flash (introductory)",
+      "input": 0.05,
+      "output": 0.25,
+      "input_cached": 0.005,
+      "effective_until": "2027-05-17"
+    },
+    {
+      "id": "mai-code-2-flash",
+      "vendor": "microsoft",
+      "name": "MAI Code 2 Flash",
+      "input": 0.1,
+      "output": 0.5,
+      "input_cached": 0.01,
+      "effective_from": "2027-05-17"
     },
     {
       "id": "raptor-mini",
