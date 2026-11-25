@@ -18,9 +18,9 @@ type normalizerVersion struct {
 }
 
 var normalizerVersions = map[string]normalizerVersion{
-	"claude":  {version: 10},
-	"codex":   {version: 10},
-	"copilot": {version: 10, regroup: copilot.RegroupNativeID},
+	"claude":  {version: 11},
+	"codex":   {version: 11},
+	"copilot": {version: 11, regroup: copilot.RegroupNativeID},
 }
 
 func rebuildStaleNormalizers(
